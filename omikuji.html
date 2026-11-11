@@ -1,94 +1,191 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
     <title>おみくじ</title>
-    <meta name="description" content="おみくじを引いて神社を探そう！">
-    <meta name="viewport" content="width=device-width">
-    <link href="css/omikuji.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Zen+Kurenaido&family=Zen+Maru+Gothic&family=Dela+Gothic+One&family=Cherry+Bomb+One&family=Kaisei+Decol&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Kaisei+Decol&family=Yuji+Boku&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho&display=swap" rel="stylesheet">
-    <link rel="icon" href="img/omikujikun.png" type="image/png">
-</head>
-<body>
+    <meta name="description" content="おみくじを引いて神社を探そう！" />
+    <meta name="viewport" content="width=device-width" />
+    <link href="css/omikuji.css" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Zen+Kurenaido&family=Zen+Maru+Gothic&family=Dela+Gothic+One&family=Cherry+Bomb+One&family=Kaisei+Decol&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Kaisei+Decol&family=Yuji+Boku&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="img/omikujikun.png" type="image/png" />
+  </head>
+  <body>
     <header>
-        <h1 id="clickable-title">⛩ Find Shrine by Drawing Fortune ⛩</h1>
-        <p class="sub">おみくじを引いて運命の神社を！</p>
-    
-    <!-- ハンバーガー -->
-    <div class="hamburger" id="hamburger">
-        <span></span>
-        <span></span>
-        <span></span>
-    </div>
+      <h1 id="clickable-title">⛩ Find Shrine by Drawing Fortune ⛩</h1>
+      <p class="sub">おみくじを引いて運命の神社を！</p>
 
-    <!-- オーバーレイ（暗背景） -->
-    <div class="overlay" id="overlay"></div>
+      <!-- ハンバーガー -->
+      <button
+        class="hamburger"
+        id="hamburger"
+        type="button"
+        aria-label="メニューを開く"
+        aria-controls="side-menu"
+        aria-expanded="false"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
 
-    <!-- スライドメニュー -->
-    <nav class="side-menu" id="side-menu">
+      <!-- オーバーレイ（暗背景） -->
+      <div class="overlay" id="overlay"></div>
+
+      <!-- スライドメニュー -->
+      <nav class="side-menu" id="side-menu">
         <ul>
-            <li><a href="index.html">ホーム</a></li>
-            <li><a href="shrine-list.html">神社一覧</a></li>
-            <li><a href="omikuji.html">おみくじ</a></li>
-            <li><a href="#top">トップへ戻る</a></li>
+          <li><a href="index.html">ホーム</a></li>
+          <li><a href="shrine-list.html">神社一覧</a></li>
+          <li><a href="omikuji.html">おみくじ</a></li>
+          <li><a href="#top">トップへ戻る</a></li>
         </ul>
-    </nav>
+      </nav>
     </header>
- 
+
     <main class="main">
-        <div class="background-image"></div>
-
-        <div class="result-container">
-            <p class="result">ここにおみくじ結果が出るよ！</p>
-            <div class="shrine-info" style="display: none;">
-                <h2 class="shrine-name">神社名</h2>
-                <p class="shrine-description">ここに説明が入るよ</p>
-                <a class="shrine-link" href="#" target="_blank">神社の公式サイトへ</a>
-            </div>
-            <button id="draw-button">おみくじを引く</button>
+      <div class="background-image" aria-hidden="true"></div>
+      <section class="fortune-shell" aria-labelledby="fortune-title">
+        <p class="eyebrow">運命の一枚、その先の旅へ</p>
+        <h2 id="fortune-title">開運<span>フィーバー</span></h2>
+        <p class="intro">祈りを込めて、神託の扉を開こう。</p>
+        <div class="stage" data-state="idle" data-tier="0" aria-busy="false">
+          <div class="rays" aria-hidden="true"></div>
+          <div class="torii" aria-hidden="true"><i></i><i></i></div>
+          <div class="particles" aria-hidden="true"></div>
+          <div class="cracks" aria-hidden="true"></div>
+          <p class="stage-label">神託待機中</p>
+          <div class="reels" aria-hidden="true">
+            <span>開</span><span>運</span><span>福</span>
+          </div>
+          <div class="fortune-card" aria-hidden="true">
+            <small>奉 納</small><strong>御神籤</strong><small>運命開花</small>
+          </div>
+          <p class="effect-caption" aria-hidden="true">
+            あなたと神社を結ぶ一枚
+          </p>
+          <p class="result" role="status" aria-live="polite">
+            さあ、運命の神社に出会おう
+          </p>
         </div>
-        <!-- くじアニメーション -->
-        <div class="omikuji-loading" style="display: none;">
-            <p class="omikuji-rolling">おみくじを引いています…</p>
+        <div class="actions">
+          <button id="draw-button" class="primary">
+            おみくじを引く <span>⟶</span>
+          </button>
+          <button id="skip-button" class="secondary" hidden>
+            演出をスキップして結果へ
+          </button>
         </div>
-
+        <section class="shrine-info" hidden aria-label="あなたにおすすめの神社">
+          <p class="eyebrow">あなたの旅の行き先</p>
+          <h3 class="shrine-name"></h3>
+          <p class="shrine-description"></p>
+          <a class="shrine-link"></a>
+          <p class="redirect-note">まもなく神社紹介へ移動します</p>
+        </section>
+        <details class="custom-settings">
+          <summary>演出カスタム <span>自分好みの神託に</span></summary>
+          <fieldset id="settings-fields">
+            <legend>演出設定（運勢の確率は変わりません）</legend>
+            <label
+              >先バレ<select id="setting-early">
+                <option value="off">OFF</option>
+                <option value="standard" selected>標準</option>
+                <option value="often">多め</option>
+              </select></label
+            >
+            <label
+              >演出時間<select id="setting-duration">
+                <option value="short">短め</option>
+                <option value="standard" selected>標準</option>
+                <option value="long">長め</option>
+              </select></label
+            >
+            <label
+              >画面振動<input id="setting-shake" type="checkbox" checked
+            /></label>
+            <label
+              >演出軽減モード<input id="setting-reduced" type="checkbox"
+            /></label>
+            <label
+              >演出スキップを許可<input
+                id="setting-skip"
+                type="checkbox"
+                checked
+            /></label>
+          </fieldset>
+          <p>
+            設定はこの端末に保存されます。演出中は変更できません。音声はありません。
+          </p>
+        </details>
+        <p class="fine-print">
+          演出は期待感を楽しむためのものです。激熱でも大吉とは限りません。<br />運勢は各20%。抽選開始時に結果が決まり、演出では変わりません。
+        </p>
+        <noscript
+          >おみくじには JavaScript が必要です。<a href="shrine-list.html"
+            >神社一覧はこちら</a
+          ></noscript
+        >
+      </section>
     </main>
 
-   <footer class="site-footer">
-    <div class="footer-inner">
+    <footer class="site-footer">
+      <div class="footer-inner">
         <p>2025 六根清浄. All rights reserved.</p>
         <ul class="footer-links">
-        <li><a href="index.html">ホーム</a></li>
-        <li><a href="shrine-list.html">神社一覧</a></li>
-        <li><a href="omikuji.html">おみくじ</a></li>
-        <li><a href="#top">トップへ戻る</a></li>
+          <li><a href="index.html">ホーム</a></li>
+          <li><a href="shrine-list.html">神社一覧</a></li>
+          <li><a href="omikuji.html">おみくじ</a></li>
+          <li><a href="#top">トップへ戻る</a></li>
         </ul>
-    </div>
+      </div>
     </footer>
 
+    <script src="js/omikuji-engine.js"></script>
     <script src="js/index.js"></script>
     <script>
-        document.getElementById("clickable-title").addEventListener("click", function () {
-            // クリック時の動作
-            window.location.href = "index.html";
+      document
+        .getElementById("clickable-title")
+        .addEventListener("click", function () {
+          // クリック時の動作
+          window.location.href = "index.html";
         });
     </script>
     <script>
-    const hamburger = document.getElementById('hamburger');
-    const sideMenu = document.getElementById('side-menu');
-    const overlay = document.getElementById('overlay');
+      const hamburger = document.getElementById("hamburger");
+      const sideMenu = document.getElementById("side-menu");
+      const overlay = document.getElementById("overlay");
 
-    hamburger.addEventListener('click', () => {
-        sideMenu.classList.toggle('open');
-        overlay.classList.toggle('show');
-    });
+      hamburger.addEventListener("click", () => {
+        sideMenu.classList.toggle("open");
+        overlay.classList.toggle("show");
+      });
 
-    overlay.addEventListener('click', () => {
-        sideMenu.classList.remove('open');
-        overlay.classList.remove('show');
-    });
+      hamburger.addEventListener("click", () => {
+        const open = sideMenu.classList.contains("open");
+        hamburger.setAttribute("aria-expanded", String(open));
+        hamburger.setAttribute(
+          "aria-label",
+          open ? "メニューを閉じる" : "メニューを開く",
+        );
+      });
+
+      overlay.addEventListener("click", () => {
+        hamburger.setAttribute("aria-expanded", "false");
+        hamburger.setAttribute("aria-label", "メニューを開く");
+        sideMenu.classList.remove("open");
+        overlay.classList.remove("show");
+      });
     </script>
-</body>
+  </body>
 </html>
