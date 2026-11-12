@@ -11,9 +11,15 @@
   const caption = document.querySelector(".effect-caption");
   const cutin = document.querySelector(".cutin");
   const hold = document.querySelector(".hold-active");
+  const stepup = document.querySelector(".stepup");
+  const stepupNumber = document.querySelector(".stepup-n");
+  const bubble = document.querySelector(".bubble");
+  const pushButton = document.querySelector(".push");
   const reels = [...document.querySelectorAll(".reel")];
   const info = document.querySelector(".shrine-info");
+  const countdown = document.querySelector(".countdown");
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
+  const REDIRECT_MS = 6000;
   let settings;
   try {
     settings = JSON.parse(
@@ -65,21 +71,40 @@
     reel.style.setProperty("--pos", [0, 2, 4][i]);
     reel.dataset.mode = "idle";
   });
-  // Fixed particle pool: no per-frame DOM allocation, fewer particles on mobile via CSS.
-  const particles = document.querySelector(".particles");
-  for (let i = 0; i < 24; i++) {
+  // Fixed pools: no per-frame DOM allocation, fewer pieces on mobile via CSS.
+  function fill(selector, count, make) {
+    const container = document.querySelector(selector);
+    for (let i = 0; i < count; i++) container.append(make(i));
+  }
+  fill(".particles", 24, (i) => {
     const particle = document.createElement("i");
     particle.style.setProperty("--x", ((i * 37) % 100) + "%");
     particle.style.setProperty("--delay", -(i % 8) * 0.3 + "s");
     particle.style.setProperty("--rotation", i * 47 + "deg");
-    particles.append(particle);
-  }
+    return particle;
+  });
+  fill(".swarm", 16, (i) => {
+    const charm = document.createElement("i");
+    charm.textContent = i % 3 ? "福" : "⛩";
+    charm.style.setProperty("--y", ((i * 29) % 90) + 3 + "%");
+    charm.style.setProperty("--delay", ((i * 0.13) % 1.6).toFixed(2) + "s");
+    charm.style.setProperty("--size", 1 + (i % 4) * 0.35 + "rem");
+    return charm;
+  });
+  fill(".sp-sakura", 26, (i) => {
+    const petal = document.createElement("i");
+    petal.style.setProperty("--x", ((i * 41) % 120) - 10 + "%");
+    petal.style.setProperty("--delay", -((i * 0.17) % 2.2).toFixed(2) + "s");
+    petal.style.setProperty("--rotation", i * 53 + "deg");
+    return petal;
+  });
   let current = null;
   let timer = null;
   let ticker = null;
   let subTimers = [];
   let running = false;
   let finished = false;
+  let stepIndex = 0;
   let cursor = 0;
   let frame = 0;
   function clearTimers() {
@@ -122,6 +147,29 @@
       current.shrine.page + "?result=" + encodeURIComponent(current.fortune)
     );
   }
+  function showShrine() {
+    const shrine = current.shrine;
+    info.dataset.fortune = current.fortune;
+    info.querySelector(".shrine-photo").style.backgroundImage =
+      `url("${shrine.image}")`;
+    info.querySelector(".shrine-fortune").textContent = current.fortune;
+    info.querySelector(".shrine-name").textContent = shrine.name;
+    info.querySelector(".shrine-area").textContent = shrine.area;
+    info.querySelector(".shrine-blessings").replaceChildren(
+      ...shrine.blessings.map((blessing) => {
+        const item = document.createElement("li");
+        item.textContent = blessing;
+        return item;
+      }),
+    );
+    info.querySelector(".shrine-description").textContent = shrine.desc;
+    const link = info.querySelector(".shrine-link");
+    link.href = destination();
+    link.textContent = shrine.name + "の詳細を見る →";
+    document.querySelector(".background-image").style.backgroundImage =
+      `url("${shrine.image}")`;
+    info.hidden = false;
+  }
   function reveal() {
     if (!running || finished) return;
     finished = true;
@@ -130,7 +178,7 @@
     stage.dataset.state = fever ? "fever" : "result";
     stage.dataset.tier = current.tier;
     stage.setAttribute("aria-busy", "false");
-    label.textContent = "神託確定";
+    label.textContent = fever ? "大当り" : "神託確定";
     caption.textContent = fever ? "祝・大吉フィーバー" : "あなたに届いた神託";
     restart(caption, "pop");
     // Left, right, then center: the pachinko stop order.
@@ -142,43 +190,47 @@
         reel.style.getPropertyValue("--pos") === String(index)
       )
         return;
-      later(() => setReel(i, "stop", index), reduced() ? 0 : n * 160);
+      later(() => setReel(i, "stop", index), reduced() ? 0 : n * 220);
     });
     result.textContent = "あなたの運勢は… " + current.fortune + "！";
-    document.querySelector(".shrine-name").textContent = current.shrine.name;
-    document.querySelector(".shrine-description").textContent =
-      current.shrine.desc;
-    const link = document.querySelector(".shrine-link");
-    link.href = destination();
-    link.textContent = current.shrine.name + "の詳細を見る →";
-    document.querySelector(".background-image").style.backgroundImage =
-      `url("${current.shrine.image}")`;
-    info.hidden = false;
+    showShrine();
     skipButton.hidden = true;
-    timer = setTimeout(
-      () => {
-        window.location.href = destination();
-      },
-      reduced() ? 4500 : 3200,
+    drawButton.textContent = "神託が下りました";
+    later(
+      () => info.scrollIntoView({ behavior: "smooth", block: "nearest" }),
+      reduced() ? 0 : 1600,
     );
+    const leaveAt = Date.now() + REDIRECT_MS;
+    const tick = () => {
+      countdown.textContent = Math.max(
+        0,
+        Math.ceil((leaveAt - Date.now()) / 1000),
+      );
+    };
+    tick();
+    ticker = setInterval(tick, 250);
+    timer = setTimeout(() => {
+      window.location.href = destination();
+    }, REDIRECT_MS);
   }
   function play(index) {
     if (!running || finished) return;
+    stepIndex = index;
     if (index === current.steps.length) {
       reveal();
       return;
     }
     const step = current.steps[index];
     stage.dataset.state = step.state;
+    stage.style.setProperty("--ms", step.ms + "ms");
     if (step.tier !== undefined) stage.dataset.tier = step.tier;
     stage.dataset.repeat = step.repeat || 0;
-    label.textContent =
-      step.state === "provisional"
-        ? "演出中・まだ確定ではありません"
-        : "神託演出中";
+    if (step.variant) stage.dataset.sp = step.variant;
+    label.textContent = step.label;
     caption.textContent = step.text;
     restart(caption, "pop");
     const fortune = fortuneIndex();
+    const reachStop = reduced() ? 0 : Math.min(800, step.ms / 4);
     switch (step.state) {
       case "spin":
         spinAll();
@@ -189,6 +241,19 @@
       case "charge":
         restart(hold, "pop");
         break;
+      case "stepup":
+        stage.dataset.step = step.step;
+        stepupNumber.textContent = step.step;
+        restart(stepup, "pop");
+        break;
+      case "serif":
+        stage.dataset.serif = step.color;
+        bubble.textContent = step.text;
+        restart(bubble, "pop");
+        break;
+      case "swarm":
+        showCutin("福群");
+        break;
       case "pause":
         // Pseudo-continuation: the reels stop out of line, then spin again.
         reels.forEach((_, i) => setReel(i, "stop", (cursor + i * 2) % 5));
@@ -198,19 +263,29 @@
         showCutin("擬似 " + (step.repeat + 1));
         break;
       case "reach":
-      case "strong-reach":
-        setReel(1, step.state === "reach" ? "slow" : "slow-strong");
+        setReel(1, "spin");
         setReel(0, "stop", fortune);
+        later(() => {
+          setReel(2, "stop", fortune);
+          setReel(1, "slow");
+          showCutin("リーチ");
+        }, reachStop);
+        break;
+      case "develop":
+        showCutin("発展");
+        break;
+      case "strong-reach":
+        setReel(1, "slow-strong");
         later(
-          () => {
-            setReel(2, "stop", fortune);
-            showCutin(step.state === "reach" ? "リーチ" : "強リーチ");
-          },
-          reduced() ? 0 : Math.min(380, step.ms / 3),
+          () => showCutin(step.label.replace("リーチ", "")),
+          reduced() ? 0 : 400,
         );
         break;
       case "hot":
         showCutin("激熱");
+        break;
+      case "push":
+        pushButton.focus({ preventScroll: true });
         break;
       case "provisional":
         setReel(1, "stop", engine.omikuji.indexOf("末吉"));
@@ -228,17 +303,28 @@
     if (
       [
         "early",
+        "serif",
+        "swarm",
         "reach",
         "strong-reach",
         "hot",
+        "push",
         "blackout",
         "revival",
         "fever",
       ].includes(step.state)
     )
-      result.textContent = step.text;
+      result.textContent = step.label + "：" + step.text;
     timer = setTimeout(() => play(index + 1), step.ms);
   }
+  // Pressing PUSH only ends the wait early; the outcome was fixed at the start.
+  pushButton.addEventListener("click", () => {
+    if (!running || finished || stage.dataset.state !== "push") return;
+    clearTimeout(timer);
+    stage.dataset.state = "pushed";
+    showCutin(current.fortune === "大吉" ? "神" : "決");
+    timer = setTimeout(() => play(stepIndex + 1), reduced() ? 0 : 900);
+  });
   drawButton.addEventListener("click", () => {
     if (running) return;
     running = true;

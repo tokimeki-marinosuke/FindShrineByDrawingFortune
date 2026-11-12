@@ -179,16 +179,19 @@ h2 span {
   pointer-events: none;
   background: linear-gradient(115deg, #ffffff12 0 28%, transparent 28.5%);
 }
+/* Phase name plate: always says which pattern is playing. */
 .stage-label {
   position: relative;
-  z-index: 3;
+  z-index: 7;
   margin: 0;
-  padding: 4px 14px;
-  border: 1px solid color-mix(in srgb, var(--energy) 45%, transparent);
+  padding: 6px 20px;
+  border: 1px solid color-mix(in srgb, var(--energy) 60%, transparent);
   border-radius: 999px;
-  background: #0007;
-  letter-spacing: 0.3em;
-  font-size: 0.68rem;
+  background: linear-gradient(#000c, #0009);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--energy) 35%, transparent);
+  letter-spacing: 0.2em;
+  font-size: 0.9rem;
+  font-weight: bold;
   color: var(--energy);
 }
 .reels {
@@ -504,25 +507,123 @@ h2 span {
   border-radius: 999px;
   cursor: pointer;
 }
+/* Result card: photo with an omikuji slip, then the shrine at a glance. */
 .shrine-info {
-  background: #241b20;
-  border: 1px solid #907044;
-  padding: 24px;
-  margin: 24px auto;
-  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  margin: 28px auto;
+  overflow: hidden;
+  text-align: left;
+  border: 1px solid #a07a45;
+  border-radius: 18px;
+  background: linear-gradient(160deg, #2a1d22, #160f14);
+  box-shadow:
+    0 0 0 4px #1a0e12,
+    0 0 0 5px #5d4329,
+    0 24px 60px #0009;
+  animation: card-in 0.7s ease-out;
+}
+.shrine-photo {
+  position: relative;
+  min-height: 300px;
+  background: #000 center / cover;
+}
+.shrine-photo:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 60%, #2a1d22);
+}
+.shrine-fortune {
+  position: absolute;
+  z-index: 1;
+  top: 18px;
+  left: 18px;
+  padding: 16px 10px;
+  writing-mode: vertical-rl;
+  border: 3px double #a3192a;
+  border-radius: 4px;
+  background: linear-gradient(#fffaf0, #f1e4c6);
+  color: #a3192a;
+  font-family: "Dela Gothic One", "Zen Old Mincho", sans-serif;
+  font-size: 2rem;
+  letter-spacing: 0.15em;
+  box-shadow: 0 8px 20px #0008;
+  transform: rotate(-3deg);
+}
+.shrine-info[data-fortune="大吉"] .shrine-fortune {
+  border-color: #c58b00;
+  background: linear-gradient(#fff8d6, #ffe08a);
+  box-shadow:
+    0 8px 20px #0008,
+    0 0 26px #ffd54a99;
+}
+.shrine-body {
+  padding: 26px 28px 22px;
+}
+.shrine-body .eyebrow {
+  margin: 0;
 }
 .shrine-name {
-  font-size: 1.7rem;
-  margin: 10px;
+  margin: 8px 0 4px;
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  letter-spacing: 0.08em;
+  color: #fff3d6;
+}
+.shrine-area {
+  margin: 0 0 14px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.shrine-area:before {
+  content: "◉ ";
+  color: #d0473a;
+}
+.shrine-blessings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+.shrine-blessings li {
+  padding: 4px 12px;
+  border: 1px solid #c79a55;
+  border-radius: 999px;
+  background: #c79a5522;
+  font-size: 0.75rem;
+  color: var(--gold);
 }
 .shrine-description {
+  margin: 0 0 18px;
   line-height: 1.9;
+  font-size: 0.9rem;
 }
 .shrine-link {
-  display: inline-block;
-  padding: 12px 18px;
-  border: 1px solid var(--gold);
+  display: block;
+  padding: 13px 18px;
+  border-radius: 999px;
+  background: linear-gradient(#f6d58a, #c79a55);
+  color: #3a1f0c;
+  text-align: center;
   text-decoration: none;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  box-shadow: 0 4px 0 #6e5130;
+}
+.shrine-link:hover {
+  filter: brightness(1.08);
+}
+.redirect-note {
+  margin: 10px 0 0;
+  text-align: center;
+}
+.countdown {
+  display: inline-block;
+  min-width: 1.4em;
+  font-size: 1rem;
+  color: var(--gold);
 }
 .redirect-note,
 .fine-print {
@@ -886,6 +987,468 @@ input {
 .can-shake[data-state="strong-reach"] .screen {
   animation: shake 0.32s ease-out 0.4s;
 }
+/* ---- Notice patterns ---- */
+.stepup,
+.serif,
+.swarm,
+.sp,
+.push {
+  display: none;
+}
+.stepup {
+  --step-c: #9aa3b5;
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  width: min(76%, 380px);
+  height: fit-content;
+  margin: auto;
+  padding: 14px 18px 16px;
+  border: 3px solid #fff;
+  border-radius: 16px;
+  background: linear-gradient(
+    160deg,
+    var(--step-c),
+    color-mix(in srgb, var(--step-c) 30%, #000)
+  );
+  box-shadow:
+    0 0 0 3px #0008,
+    0 0 40px var(--step-c);
+  font-family: "Dela Gothic One", sans-serif;
+  color: #fff;
+}
+.stage[data-state="stepup"] .stepup {
+  display: block;
+}
+.stepup.pop {
+  animation: stamp 0.4s ease-out;
+}
+.stepup b {
+  display: block;
+  font-weight: normal;
+  font-size: 1.1rem;
+  letter-spacing: 0.4em;
+}
+.stepup-n {
+  display: block;
+  font-size: clamp(3.4rem, 13vw, 5rem);
+  line-height: 1.05;
+  -webkit-text-stroke: 0.1em color-mix(in srgb, var(--step-c) 50%, #000);
+  paint-order: stroke fill;
+}
+.stepup ol {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.stepup li {
+  width: 34px;
+  height: 9px;
+  border-radius: 3px;
+  background: #fff3;
+}
+.stage[data-step="1"] .stepup li:nth-child(-n + 1),
+.stage[data-step="2"] .stepup li:nth-child(-n + 2),
+.stage[data-step="3"] .stepup li:nth-child(-n + 3),
+.stage[data-step="4"] .stepup li:nth-child(-n + 4),
+.stage[data-step="5"] .stepup li {
+  background: #fff;
+  box-shadow: 0 0 8px #fff;
+}
+.stage[data-step="2"] .stepup {
+  --step-c: #2f7de1;
+}
+.stage[data-step="3"] .stepup {
+  --step-c: #1fa35a;
+}
+.stage[data-step="4"] .stepup {
+  --step-c: #d8262b;
+}
+.stage[data-step="5"] .stepup {
+  --step-c: #e0a400;
+  border-color: #fff6c2;
+}
+.stage[data-step="5"] .stepup:before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border-radius: 20px;
+  background: conic-gradient(
+    #ff4d6d,
+    #ffb703,
+    #fff04d,
+    #55e06b,
+    #3ad1ff,
+    #6a6bff,
+    #e15cff,
+    #ff4d6d
+  );
+  animation: hue 1.2s linear infinite;
+}
+@keyframes hue {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+.serif {
+  --serif-c: #ffffff;
+  --serif-ink: #2a2333;
+  position: absolute;
+  z-index: 5;
+  left: 5%;
+  right: 5%;
+  bottom: 14%;
+  align-items: center;
+  gap: 10px;
+}
+.stage[data-state="serif"] .serif {
+  display: flex;
+}
+.serif img {
+  flex: none;
+  width: 88px;
+  height: 88px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 4px 0 #0008);
+  animation: hop 0.5s ease-in-out infinite alternate;
+}
+.bubble {
+  position: relative;
+  margin: 0;
+  padding: 12px 18px;
+  border: 3px solid #fff;
+  border-radius: 16px;
+  background: var(--serif-c);
+  color: var(--serif-ink);
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: clamp(1.05rem, 4.4vw, 1.75rem);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--serif-c) 60%, transparent);
+}
+.bubble:before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  margin-top: -9px;
+  border: 9px solid transparent;
+  border-right: 12px solid #fff;
+  border-left: 0;
+}
+.bubble.pop {
+  animation: stamp 0.4s ease-out;
+}
+.stage[data-serif="1"] .serif {
+  --serif-c: #2f7de1;
+  --serif-ink: #fff;
+}
+.stage[data-serif="2"] .serif {
+  --serif-c: #1fa35a;
+  --serif-ink: #fff;
+}
+.stage[data-serif="3"] .serif {
+  --serif-c: #d8262b;
+  --serif-ink: #fff;
+}
+.stage[data-serif="4"] .serif {
+  --serif-c: #f2b705;
+  --serif-ink: #4a1d00;
+}
+.swarm {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+}
+.stage[data-state="swarm"] .swarm {
+  display: block;
+}
+.swarm i {
+  position: absolute;
+  top: var(--y);
+  left: -15%;
+  font-style: normal;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: var(--size);
+  color: #ffe45c;
+  -webkit-text-stroke: 0.12em #b3001b;
+  paint-order: stroke fill;
+  animation: swarm 1.5s var(--delay) linear infinite;
+}
+.stage[data-state="swarm"] .screen {
+  background: radial-gradient(ellipse at 50% 50%, #6b3a12, #1d0d08 75%);
+}
+/* ---- SP reaches: each has its own scene behind the reels ---- */
+.sp {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.stage[data-state="strong-reach"][data-sp="senbon"] .sp-senbon,
+.stage[data-state="strong-reach"][data-sp="tobira"] .sp-tobira,
+.stage[data-state="strong-reach"][data-sp="sakura"] .sp-sakura {
+  display: block;
+}
+.stage[data-state="strong-reach"] .torii {
+  visibility: hidden;
+}
+.sp-senbon {
+  background: radial-gradient(ellipse at 50% 48%, #ffcf7a, #b3311d 30%, #2a0707 75%);
+}
+.sp-senbon i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 62%;
+  height: 74%;
+  border: 14px solid #e8452c;
+  border-bottom: 0;
+  border-top: 18px solid #1d0b08;
+  box-shadow: 0 -4px 0 #e8452c;
+  opacity: 0;
+  animation: tunnel 2.4s linear infinite;
+}
+.sp-senbon i:before {
+  content: "";
+  position: absolute;
+  top: 12%;
+  left: -16%;
+  right: -16%;
+  height: 10px;
+  background: #e8452c;
+}
+.sp-senbon i:nth-child(2) {
+  animation-delay: -0.4s;
+}
+.sp-senbon i:nth-child(3) {
+  animation-delay: -0.8s;
+}
+.sp-senbon i:nth-child(4) {
+  animation-delay: -1.2s;
+}
+.sp-senbon i:nth-child(5) {
+  animation-delay: -1.6s;
+}
+.sp-senbon i:nth-child(6) {
+  animation-delay: -2s;
+}
+.sp-tobira {
+  background: radial-gradient(ellipse at 50% 50%, #fffbe6, #ffd36a 30%, #6b3c00 80%);
+}
+.sp-tobira i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  display: grid;
+  place-items: end center;
+  padding-bottom: 7%;
+  background:
+    repeating-linear-gradient(90deg, #0000 0 26px, #0003 26px 29px),
+    linear-gradient(#b0261c, #6e0f0b);
+  box-shadow: inset 0 0 0 6px #e0b04d;
+  font-style: normal;
+  animation: var(--ms, 5s) ease-in-out forwards;
+}
+.sp-tobira i:after {
+  display: grid;
+  place-items: center;
+  width: 74px;
+  height: 74px;
+  border: 4px solid #f6d58a;
+  border-radius: 50%;
+  background: #6e0f0b;
+  color: #f6d58a;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 2.2rem;
+}
+.sp-tobira i:first-child {
+  left: 0;
+  animation-name: door-left;
+}
+.sp-tobira i:first-child:after {
+  content: "開";
+}
+.sp-tobira i:last-child {
+  right: 0;
+  animation-name: door-right;
+}
+.sp-tobira i:last-child:after {
+  content: "運";
+}
+.sp-sakura {
+  background: linear-gradient(170deg, #ffb7c9, #d2537e 45%, #3d0c22);
+}
+.sp-sakura i {
+  position: absolute;
+  top: -8%;
+  left: var(--x);
+  width: 12px;
+  height: 16px;
+  border-radius: 70% 0 70% 0;
+  background: #ffe1ea;
+  box-shadow: 0 0 6px #fff8;
+  animation: sakura 2.2s var(--delay) linear infinite;
+}
+.sp-sakura i:nth-child(3n) {
+  background: #ff9fbc;
+  width: 9px;
+  height: 12px;
+}
+.stage[data-state="develop"] .screen,
+.stage[data-state="pushed"] .screen {
+  animation: flash 0.7s ease-out;
+}
+.stage[data-state="develop"] .reels {
+  animation: develop 1.5s ease-in-out;
+}
+.stage[data-state="develop"] .lamps:before {
+  animation-duration: 0.6s;
+}
+/* ---- Final battle: PUSH button ---- */
+.push {
+  position: absolute;
+  z-index: 7;
+  left: 0;
+  right: 0;
+  bottom: 18px;
+  width: 112px;
+  height: 112px;
+  margin: auto;
+  border: 5px solid #ffe08a;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 30%, #ff9c80, #e01f1f 45%, #7a0a0a);
+  color: #fff;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.04em;
+  text-shadow: 0 3px 0 #5a0505;
+  box-shadow:
+    0 8px 0 #5a0b0e,
+    0 0 0 8px #0006,
+    0 0 40px #ff4b3a;
+  cursor: pointer;
+  animation: push-beat 0.5s ease-in-out infinite alternate;
+}
+.stage[data-state="push"] .push {
+  display: block;
+}
+.stage[data-state="push"] .hold,
+.stage[data-state="push"] .effect-caption {
+  visibility: hidden;
+}
+.stage[data-state="push"] .screen {
+  background: radial-gradient(ellipse at 50% 80%, #6b0f14, #13050a 70%);
+}
+.stage[data-state="push"] .lamps:before {
+  animation:
+    radiate 1s linear infinite,
+    blink 0.3s steps(2) infinite;
+}
+.push:active {
+  transform: translateY(6px);
+  box-shadow:
+    0 2px 0 #5a0b0e,
+    0 0 0 8px #0006,
+    0 0 40px #ff4b3a;
+}
+@keyframes stamp {
+  from {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.95);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes hop {
+  to {
+    transform: translateY(-8px);
+  }
+}
+@keyframes swarm {
+  to {
+    left: 115%;
+  }
+}
+@keyframes tunnel {
+  from {
+    transform: translate(-50%, -48%) scale(0.12);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  to {
+    transform: translate(-50%, -48%) scale(2.6);
+    opacity: 0.9;
+  }
+}
+@keyframes door-left {
+  from {
+    transform: translateX(-100%);
+  }
+  14%,
+  80% {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+@keyframes door-right {
+  from {
+    transform: translateX(100%);
+  }
+  14%,
+  80% {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes sakura {
+  to {
+    transform: translate(-140px, 520px) rotate(calc(var(--rotation) + 540deg));
+  }
+}
+@keyframes flash {
+  from {
+    filter: brightness(3);
+  }
+  to {
+    filter: brightness(1);
+  }
+}
+@keyframes develop {
+  30% {
+    transform: scale(0.88);
+  }
+  60% {
+    transform: scale(1.06);
+  }
+}
+@keyframes push-beat {
+  to {
+    transform: scale(1.08);
+  }
+}
+@keyframes card-in {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
 @keyframes reel-spin {
   from {
     transform: translateY(calc(var(--cell) * -9.75));
@@ -1113,6 +1676,39 @@ input {
   .torii {
     left: 8%;
     right: 8%;
+  }
+  .stage-label {
+    font-size: 0.8rem;
+  }
+  .serif img {
+    width: 56px;
+    height: 56px;
+  }
+  .push {
+    width: 96px;
+    height: 96px;
+    font-size: 1.25rem;
+  }
+  .sp-tobira i:after {
+    width: 58px;
+    height: 58px;
+    font-size: 1.7rem;
+  }
+  .swarm i:nth-child(n + 11),
+  .sp-sakura i:nth-child(n + 17) {
+    display: none;
+  }
+  .shrine-info {
+    grid-template-columns: 1fr;
+  }
+  .shrine-photo {
+    min-height: 200px;
+  }
+  .shrine-photo:after {
+    background: linear-gradient(transparent 55%, #2a1d22);
+  }
+  .shrine-body {
+    padding: 20px 18px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

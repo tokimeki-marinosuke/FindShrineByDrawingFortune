@@ -32,7 +32,7 @@ const assert = require("node:assert/strict");
       await p.locator("#draw-button").dispatchEvent("click");
       assert.equal(await p.locator("#draw-button").isDisabled(), true);
       const seen = [];
-      for (let n = 0; n < 180; n++) {
+      for (let n = 0; n < 500; n++) {
         await p.clock.runFor(100);
         const state = await p.locator(".stage").getAttribute("data-state");
         if (!seen.includes(state)) seen.push(state);
@@ -65,7 +65,7 @@ const assert = require("node:assert/strict");
         ),
         false,
       );
-      await p.clock.runFor(3400);
+      await p.clock.runFor(6200);
       await p.waitForURL("**/shrine/meiji.html?result=*");
       assert.match(await p.locator("#omikuji-result").innerText(), /大吉/);
       assert.deepEqual(errors, []);
@@ -88,7 +88,7 @@ const assert = require("node:assert/strict");
       await p.goto("http://127.0.0.1:8000/omikuji.html");
       await p.locator("#draw-button").click();
       const seen = [];
-      for (let n = 0; n < 100; n++) {
+      for (let n = 0; n < 200; n++) {
         await p.clock.runFor(100);
         const s = await p.locator(".stage").getAttribute("data-state");
         if (!seen.includes(s)) seen.push(s);
@@ -119,7 +119,7 @@ const assert = require("node:assert/strict");
         await p.locator(".result").innerText(),
         new RegExp(["大吉", "中吉", "吉", "末吉", "凶"][i]),
       );
-      await p.clock.runFor(3400);
+      await p.clock.runFor(6200);
       await p.waitForURL(
         "**/shrine/" +
           ["meiji", "fushimi", "sumiyoshi", "kawagoe", "washi"][i] +
