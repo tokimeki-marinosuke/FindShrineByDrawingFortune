@@ -170,28 +170,35 @@
       `url("${shrine.image}")`;
     info.hidden = false;
   }
+  // Stops the given reels in order (pachinko order is left, right, center).
+  function stopReels(targets, gap) {
+    [0, 2, 1].forEach((i, n) => {
+      const reel = reels[i];
+      if (
+        reel.dataset.mode === "stop" &&
+        reel.style.getPropertyValue("--pos") === String(targets[i])
+      )
+        return;
+      later(() => setReel(i, "stop", targets[i]), reduced() ? 0 : n * gap);
+    });
+  }
   function reveal() {
     if (!running || finished) return;
     finished = true;
     clearTimers();
     const fever = current.fortune === "大吉";
-    stage.dataset.state = fever ? "fever" : "result";
+    stage.dataset.state = fever ? "fever" : current.hit ? "result" : "miss";
     stage.dataset.tier = current.tier;
     stage.setAttribute("aria-busy", "false");
-    label.textContent = fever ? "大当り" : "神託確定";
-    caption.textContent = fever ? "祝・大吉フィーバー" : "あなたに届いた神託";
+    label.textContent = fever ? "大当り" : current.hit ? "神託確定" : "ハズレ";
+    caption.textContent = fever
+      ? "祝・大吉フィーバー"
+      : current.hit
+        ? "あなたに届いた神託"
+        : "凶…ここから運気を上げよう";
     restart(caption, "pop");
-    // Left, right, then center: the pachinko stop order.
-    const index = fortuneIndex();
-    [0, 2, 1].forEach((i, n) => {
-      const reel = reels[i];
-      if (
-        reel.dataset.mode === "stop" &&
-        reel.style.getPropertyValue("--pos") === String(index)
-      )
-        return;
-      later(() => setReel(i, "stop", index), reduced() ? 0 : n * 220);
-    });
+    // A miss stops a little slower, like the reels running out of steam.
+    stopReels(current.reels, current.hit ? 220 : 380);
     result.textContent = "あなたの運勢は… " + current.fortune + "！";
     showShrine();
     skipButton.hidden = true;
@@ -229,16 +236,14 @@
     label.textContent = step.label;
     caption.textContent = step.text;
     restart(caption, "pop");
+    // Cut-ins come with the plan; reaches show theirs once the reach is formed.
+    let cutinDelay = 0;
     const fortune = fortuneIndex();
-    const reachStop = reduced() ? 0 : Math.min(800, step.ms / 4);
     switch (step.state) {
       case "spin":
         spinAll();
         break;
-      case "early":
-        showCutin("先バレ");
-        break;
-      case "charge":
+      case "hold":
         restart(hold, "pop");
         break;
       case "stepup":
@@ -251,54 +256,60 @@
         bubble.textContent = step.text;
         restart(bubble, "pop");
         break;
-      case "swarm":
-        showCutin("福群");
-        break;
       case "pause":
         // Pseudo-continuation: the reels stop out of line, then spin again.
         reels.forEach((_, i) => setReel(i, "stop", (cursor + i * 2) % 5));
         break;
       case "repeat":
         spinAll();
-        showCutin("擬似 " + (step.repeat + 1));
         break;
       case "reach":
+        cutinDelay = reduced() ? 0 : Math.min(800, step.ms / 4);
         setReel(1, "spin");
-        setReel(0, "stop", fortune);
+        setReel(0, "stop", step.symbol);
         later(() => {
-          setReel(2, "stop", fortune);
+          setReel(2, "stop", step.symbol);
           setReel(1, "slow");
-          showCutin("リーチ");
-        }, reachStop);
-        break;
-      case "develop":
-        showCutin("発展");
+        }, cutinDelay);
         break;
       case "strong-reach":
+        cutinDelay = reduced() ? 0 : 400;
         setReel(1, "slow-strong");
-        later(
-          () => showCutin(step.label.replace("リーチ", "")),
-          reduced() ? 0 : 400,
-        );
-        break;
-      case "hot":
-        showCutin("激熱");
         break;
       case "push":
         pushButton.focus({ preventScroll: true });
         break;
       case "provisional":
-        setReel(1, "stop", engine.omikuji.indexOf("末吉"));
+        // Looks exactly like a miss before the revival.
+        setReel(1, "stop", step.symbol);
         break;
       case "revival":
         setReel(1, "spin");
-        showCutin("復活");
+        break;
+      case "settle":
+        setReel(1, "stop", step.symbol);
+        break;
+      case "upgrade":
+        spinAll();
+        break;
+      case "zenkaiten":
+        reels.forEach((reel) => {
+          reel.style.setProperty("--pos", fortune);
+          reel.dataset.mode = "zen";
+        });
+        break;
+      case "kokuchi":
+        reels.forEach((_, i) => setReel(i, "stop", fortune));
         break;
       case "fever":
-        setReel(1, "stop", fortune);
-        showCutin("大当り");
+        // After a full rotation all three land together.
+        stopReels(
+          [fortune, fortune, fortune],
+          reels[0].dataset.mode === "zen" ? 0 : 220,
+        );
         break;
     }
+    if (step.cutin) later(() => showCutin(step.cutin), cutinDelay);
     // Only meaningful milestones are announced, never the rapidly changing reels.
     if (
       [
@@ -309,8 +320,13 @@
         "strong-reach",
         "hot",
         "push",
+        "provisional",
         "blackout",
         "revival",
+        "settle",
+        "upgrade",
+        "zenkaiten",
+        "kokuchi",
         "fever",
       ].includes(step.state)
     )

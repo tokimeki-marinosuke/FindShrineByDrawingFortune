@@ -298,10 +298,10 @@ h2 span {
   animation-duration: 1.6s;
 }
 /* Offset phases so the three reels never scroll in lockstep. */
-.reel:nth-child(2):not([data-mode="stop"]) .strip {
+.reel:nth-child(2):not([data-mode="stop"]):not([data-mode="zen"]) .strip {
   animation-delay: -0.13s;
 }
-.reel:nth-child(3):not([data-mode="stop"]) .strip {
+.reel:nth-child(3):not([data-mode="stop"]):not([data-mode="zen"]) .strip {
   animation-delay: -0.25s;
 }
 .reel[data-mode="slow"],
@@ -1301,6 +1301,9 @@ input {
   height: 12px;
 }
 .stage[data-state="develop"] .screen,
+.stage[data-state="chance"] .screen,
+.stage[data-state="upgrade"] .screen,
+.stage[data-state="kokuchi"] .screen,
 .stage[data-state="pushed"] .screen {
   animation: flash 0.7s ease-out;
 }
@@ -1309,6 +1312,98 @@ input {
 }
 .stage[data-state="develop"] .lamps:before {
   animation-duration: 0.6s;
+}
+/* ---- Script states: miss, settle, upgrade, premium ---- */
+.stage[data-state="chance"] .lamps:before {
+  animation-duration: 0.8s;
+}
+.stage[data-state="settle"] .reels:after {
+  opacity: 1;
+  background: color-mix(in srgb, var(--energy) 14%, transparent);
+}
+.stage[data-state="upgrade"] .lamps:before,
+.stage[data-state="zenkaiten"] .lamps:before,
+.stage[data-state="kokuchi"] .lamps:before {
+  background: repeating-conic-gradient(
+    #ff4d6d 0 2deg,
+    transparent 2deg 4deg,
+    #ffd23f 4deg 6deg,
+    transparent 6deg 8deg,
+    #4dd2ff 8deg 10deg,
+    transparent 10deg 12deg
+  );
+  animation-duration: 1s;
+}
+.stage[data-state="kokuchi"] .screen {
+  background: radial-gradient(ellipse at 50% 50%, #fff6d0, #ffb800 35%, #5a2a00 85%);
+}
+/* ぷちゅん: the machine looks like it lost power, no fade. */
+.stage[data-state="puchun"],
+.stage[data-state="puchun"] * {
+  transition: none !important;
+}
+.stage[data-state="puchun"] {
+  box-shadow:
+    inset 0 0 0 2px #3a2c1a,
+    inset 0 0 0 5px #0a0608,
+    0 30px 70px #000a;
+}
+.stage[data-state="puchun"] .screen {
+  background: #000;
+  box-shadow: inset 0 0 0 2px #2a2014;
+}
+.stage[data-state="puchun"] .screen > *,
+.stage[data-state="puchun"] .lamps,
+.stage[data-state="puchun"] .result {
+  visibility: hidden;
+}
+.stage[data-state="zenkaiten"] .screen {
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    #5a1630,
+    #1f2a63,
+    #14503f,
+    #5c4a12,
+    #5a1630
+  );
+}
+.reel[data-mode="zen"] .strip {
+  animation: reel-spin 1.4s linear infinite;
+}
+/* Every cell reads 大吉 while all three roll together. */
+.reel[data-mode="zen"] .strip span {
+  --fill: #ffe45c;
+  --c: #d0101f;
+  --d: #520207;
+  font-size: 0;
+}
+.reel[data-mode="zen"] .strip span:after {
+  content: "大吉";
+  font-size: calc(var(--cell) * 0.5);
+}
+.reel[data-mode="zen"] {
+  box-shadow:
+    0 0 0 2px #fff6c2,
+    0 0 26px #ffd54a;
+  animation: reach-glow 0.4s ease-in-out infinite alternate;
+}
+/* ハズレ: dull and quiet, no payline. */
+.stage[data-state="miss"] {
+  --energy: #9aa0b4;
+}
+.stage[data-state="miss"] .screen {
+  background: radial-gradient(ellipse at 50% 30%, #23212e, #0b0a10 75%);
+}
+.stage[data-state="miss"] .reels {
+  filter: saturate(0.35) brightness(0.8);
+}
+.stage[data-state="miss"] .lamps:before {
+  opacity: 0.25;
+  animation-duration: 30s;
+}
+.stage[data-state="miss"] .rays,
+.stage[data-state="miss"] .particles {
+  opacity: 0;
 }
 /* ---- Final battle: PUSH button ---- */
 .push {

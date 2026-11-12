@@ -73,21 +73,53 @@
       skip: typeof value.skip === "boolean" ? value.skip : defaults.skip,
     };
   }
-  // Notice weights per fortune: swarm, stepup, serif; the remainder is no notice.
-  const noticeWeights = [
-    [0.35, 0.3, 0.25],
-    [0.2, 0.3, 0.3],
-    [0.08, 0.3, 0.3],
-    [0.03, 0.25, 0.3],
-    [0.01, 0.2, 0.3],
-  ];
-  function pickWeighted(value, weights) {
+  // Presentation scripts per fortune. Weights shape only the show; the fortune is already fixed.
+  // 大吉〜末吉 end with the reels lined up (当たり); 凶 is the ハズレ and never lines up.
+  const scenarios = Object.freeze([
+    Object.freeze([
+      ["puchun", 0.12],
+      ["kokuchi", 0.1],
+      ["royal", 0.26],
+      ["kecchi", 0.2],
+      ["revival", 0.17],
+      ["upgrade", 0.15],
+    ]),
+    Object.freeze([
+      ["normal", 0.1],
+      ["notice", 0.15],
+      ["sp", 0.3],
+      ["kecchi", 0.15],
+      ["revival", 0.15],
+      ["upgrade", 0.15],
+    ]),
+    Object.freeze([
+      ["normal", 0.25],
+      ["notice", 0.25],
+      ["sp", 0.2],
+      ["kecchi", 0.15],
+      ["revival", 0.1],
+      ["upgrade", 0.05],
+    ]),
+    Object.freeze([
+      ["normal", 0.45],
+      ["notice", 0.25],
+      ["sp", 0.15],
+      ["kecchi", 0.15],
+    ]),
+    Object.freeze([
+      ["quick", 0.45],
+      ["reach-miss", 0.3],
+      ["sp-miss", 0.17],
+      ["pseudo-miss", 0.08],
+    ]),
+  ]);
+  function pickScenario(value, table) {
     let total = 0;
-    for (const [i, weight] of weights.entries()) {
+    for (const [name, weight] of table) {
       total += weight;
-      if (value < total) return ["swarm", "stepup", "serif"][i];
+      if (value < total) return name;
     }
-    return "none";
+    return table[table.length - 1][0];
   }
   // White, blue, green, red, gold: hotter colours lean towards better fortunes.
   const serifLines = [
@@ -97,15 +129,21 @@
     "激アツじゃ！！",
     "神様が微笑んでおる…！",
   ];
+  const holdNames = ["白", "青", "緑", "赤", "金", "虹"];
   const spReaches = {
-    senbon: { label: "千本鳥居リーチ", text: "千本鳥居を駆け抜けろ" },
-    tobira: { label: "天の扉リーチ", text: "天の扉、開くか" },
-    sakura: { label: "桜吹雪リーチ", text: "桜吹雪の奇跡" },
+    senbon: { label: "千本鳥居リーチ", text: "千本鳥居を駆け抜けろ", cutin: "千本鳥居" },
+    tobira: { label: "天の扉リーチ", text: "天の扉、開くか", cutin: "天の扉" },
+    sakura: { label: "桜吹雪リーチ", text: "桜吹雪の奇跡", cutin: "桜吹雪" },
   };
+  // How hot notices may get, per fortune.
+  const heats = [0.9, 0.7, 0.5, 0.35, 0.25];
   function createDraw(settings = defaults, random = Math.random) {
     settings = normalizeSettings(settings);
     const index = Math.floor(random() * omikuji.length);
     const fortune = omikuji[index];
+    const scenario = pickScenario(random(), scenarios[index]);
+    const hit = index < 4;
+    const heat = heats[index];
     // These probabilities affect only presentation. Each fortune remains 20%.
     const earlyRate =
       settings.early === "off"
@@ -113,161 +151,251 @@
         : (settings.early === "often"
             ? [0.9, 0.7, 0.35, 0.15, 0.08]
             : [0.65, 0.4, 0.15, 0.05, 0.02])[index];
-    const early = random() < earlyRate;
-    const hot = random() < [0.8, 0.5, 0.2, 0.06, 0.02][index];
-    const revival = index < 2 && random() < 0.25;
-    const repeats = Math.floor(random() * (index < 2 ? 4 : 3));
-    // Monotonic tiers: white/blue/green/red/gold/rainbow. Rainbow is exclusive to daikichi.
-    const tier =
-      index === 0 ? (random() < 0.5 ? 5 : 4) : [0, 4, 3, 2, 1][index];
-    const strong = index < 2 || hot || repeats === 3;
-    // Pattern choices draw after the original ones so seeded plans stay stable.
-    const notice = pickWeighted(random(), noticeWeights[index]);
-    const stepLevel =
-      notice === "stepup"
-        ? 1 + Math.floor(random() * [5, 4.4, 3.6, 3, 2.5][index])
-        : 0;
-    const serifColor =
-      notice === "serif"
-        ? Math.floor(random() * [5, 4.5, 3.5, 2.6, 2][index])
-        : 0;
-    // Low fortunes can still develop into an SP reach now and then.
-    const sp = strong || random() < [0, 0, 0.3, 0.15, 0.08][index];
-    const variant = sp
-      ? ["senbon", "tobira", "sakura"][Math.floor(random() * 3)]
-      : null;
-    const push = sp && random() < [0.85, 0.6, 0.35, 0.25, 0.2][index];
-    const steps = [
-      { state: "spin", label: "変動開始", text: "運命が、動き出す", ms: 2200 },
-    ];
-    if (early)
-      steps.push({
-        state: "early",
-        label: "先バレ",
-        text: "開運接近",
-        ms: 1700,
-      });
-    for (let n = 1; n <= tier; n++)
-      steps.push({
-        state: "charge",
-        label: "保留変化",
-        text: ["白", "青", "緑", "赤", "金", "虹"][n] + "の神気",
-        tier: n,
-        ms: 700,
-      });
-    for (let n = 1; n <= stepLevel; n++)
-      steps.push({
-        state: "stepup",
-        label: "ステップアップ予告",
-        text: n === 5 ? "STEP 5・最終段階" : "STEP " + n,
-        step: n,
-        ms: n === stepLevel ? 1400 : 750,
-      });
-    if (notice === "serif")
-      steps.push({
-        state: "serif",
-        label: "セリフ予告",
-        text: serifLines[serifColor],
-        color: serifColor,
-        ms: 2400,
-      });
-    if (notice === "swarm")
-      steps.push({
-        state: "swarm",
-        label: "福群予告",
-        text: "福が押し寄せる！",
-        ms: 2400,
-      });
-    for (let n = 1; n <= repeats; n++) {
-      steps.push({
-        state: "pause",
-        label: "擬似連続予告",
-        text: "……",
-        ms: 600,
-      });
-      steps.push({
-        state: "repeat",
-        label: "擬似連続予告",
-        text: n === 3 ? "三連・神域突入" : "継続 × " + n,
-        repeat: n,
-        ms: 1500,
+    const chance = (p) => random() < p;
+    const between = (low, high) =>
+      low + Math.floor(random() * (high - low + 1));
+    const steps = [];
+    const add = (state, label, text, ms, extra) =>
+      steps.push({ state, label, text, ms, ...extra });
+    let early = false;
+    let tier = 0;
+    // A neighbouring symbol: what the center reel shows when a reach misses.
+    const beside = (symbol) =>
+      symbol === 0 ? 1 : symbol === 4 || chance(0.5) ? symbol - 1 : symbol + 1;
+
+    function opening(ms = 2200) {
+      add("spin", "変動開始", "運命が、動き出す", ms);
+      if (chance(earlyRate)) {
+        early = true;
+        add("early", "先バレ", "開運接近", 1700, { cutin: "先バレ" });
+      }
+    }
+    function hold(next, late) {
+      if (next <= tier) return;
+      tier = next;
+      add(
+        "hold",
+        late ? "当該保留変化" : "保留変化",
+        next === 5 ? "虹保留・確定！" : holdNames[next] + "保留",
+        next >= 4 ? 1700 : 1100,
+        { tier: next, cutin: next === 5 ? "確定" : null },
+      );
+    }
+    // Opening hold changes stop at green, so the first seconds never give the fortune away.
+    function earlyHold() {
+      if (chance([0.35, 0.3, 0.25, 0.2, 0.15][index]))
+        hold(chance(0.4) ? 2 : 1, false);
+    }
+    // Rainbow exists only for 大吉 and only here, after the reach has started.
+    function lateHold() {
+      const r = random();
+      const next = [
+        r < 0.55 ? 5 : 4,
+        r < 0.5 ? 4 : 3,
+        r < 0.15 ? 4 : r < 0.65 ? 3 : 2,
+        r < 0.3 ? 3 : 2,
+        r < 0.04 ? 4 : r < 0.3 ? 3 : r < 0.7 ? 2 : 1,
+      ][index];
+      hold(next, true);
+    }
+    const level = (warmth) =>
+      Math.min(4, Math.floor(random() * (1 + 4 * warmth)));
+    function notice(warmth) {
+      const kind = random();
+      if (kind < 0.45) {
+        const color = level(warmth);
+        add("serif", "セリフ予告", serifLines[color], 2400, { color });
+      } else if (kind < 0.8 || warmth < 0.6) {
+        const top = 1 + level(warmth);
+        for (let n = 1; n <= top; n++)
+          add(
+            "stepup",
+            "ステップアップ予告",
+            n === 5 ? "STEP 5・最終段階" : "STEP " + n,
+            n === top ? 1400 : 750,
+            { step: n },
+          );
+      } else {
+        add("swarm", "福群予告", "福が押し寄せる！", 2400, { cutin: "福群" });
+      }
+    }
+    function pseudo(count) {
+      for (let n = 1; n <= count; n++) {
+        add("pause", "擬似連続予告", "……", 600);
+        add(
+          "repeat",
+          "擬似連続予告",
+          n === 3 ? "三連・神域突入" : "継続 × " + n,
+          1500,
+          { repeat: n, cutin: "擬似 " + (n + 1) },
+        );
+      }
+    }
+    function reach(symbol, ms) {
+      add("reach", "リーチ", omikuji[symbol] + "リーチ！", ms, {
+        symbol,
+        cutin: "リーチ",
       });
     }
-    steps.push({
-      state: "reach",
-      label: "リーチ",
-      text: "リーチ・祈りの刻",
-      ms: sp ? 3000 : 4200,
-    });
-    if (sp) {
-      steps.push({
-        state: "develop",
-        label: "SPリーチ発展",
-        text: "発展！",
-        ms: 1500,
-      });
-      steps.push({
-        state: "strong-reach",
-        label: spReaches[variant].label,
-        text: spReaches[variant].text,
+    function spReach() {
+      const variant = ["senbon", "tobira", "sakura"][between(0, 2)];
+      const sp = spReaches[variant];
+      add("develop", "SPリーチ発展", "発展！", 1500, { cutin: "発展" });
+      add("strong-reach", sp.label, sp.text, 5600, {
         variant,
-        ms: 5600,
+        cutin: sp.cutin,
       });
     }
-    if (hot)
-      steps.push({
-        state: "hot",
-        label: "チャンスアップ",
-        text: "神託発動・激熱",
-        ms: 2200,
-      });
-    if (push)
-      steps.push({
-        state: "push",
-        label: "最終決戦",
-        text: "ボタンを押せ！",
-        ms: 3200,
-      });
-    if (revival) {
-      steps.push({
-        state: "provisional",
-        label: "演出中・まだ確定ではありません",
-        text: "仮の運勢：末吉……？",
-        ms: 2000,
-      });
-      steps.push({
-        state: "blackout",
-        label: "……",
-        text: "まだ終わらない……",
-        ms: 2000,
-      });
-      steps.push({
-        state: "revival",
-        label: "復活",
-        text: "運命開花",
-        ms: 2000,
-      });
+    const hot = () =>
+      add("hot", "チャンスアップ", "神託発動・激熱", 2200, { cutin: "激熱" });
+    const push = () => add("push", "最終決戦", "ボタンを押せ！", 3200);
+
+    let reels = [index, index, index];
+    // Every hit lines up on its own symbol; misses reach on any hit symbol.
+    const missSymbol = () => between(0, 3);
+    switch (scenario) {
+      case "quick": {
+        opening(2400);
+        if (chance(0.3)) notice(0.1);
+        const left = between(0, 4);
+        reels = [left, between(0, 4), (left + between(1, 4)) % 5];
+        break;
+      }
+      case "reach-miss": {
+        opening();
+        earlyHold();
+        if (chance(0.4)) notice(0.3);
+        const symbol = missSymbol();
+        reach(symbol, 4600);
+        reels = [symbol, beside(symbol), symbol];
+        break;
+      }
+      case "sp-miss": {
+        opening();
+        earlyHold();
+        notice(0.5);
+        if (chance(0.3)) pseudo(1);
+        const symbol = missSymbol();
+        reach(symbol, 3000);
+        spReach();
+        if (chance(0.15)) hot();
+        if (chance(0.5)) lateHold();
+        if (chance(0.4)) push();
+        reels = [symbol, beside(symbol), symbol];
+        break;
+      }
+      case "pseudo-miss": {
+        opening();
+        pseudo(between(1, 2));
+        const symbol = missSymbol();
+        reach(symbol, 3200);
+        if (chance(0.5)) spReach();
+        reels = [symbol, beside(symbol), symbol];
+        break;
+      }
+      case "normal":
+        opening();
+        earlyHold();
+        reach(index, 4600);
+        if (chance(0.3)) lateHold();
+        break;
+      case "notice":
+        opening();
+        earlyHold();
+        notice(heat);
+        if (chance(0.35)) pseudo(1);
+        reach(index, 4200);
+        if (chance(0.4)) lateHold();
+        break;
+      case "sp":
+        opening();
+        earlyHold();
+        if (chance(0.6)) notice(heat);
+        if (chance(0.4)) pseudo(between(1, 3));
+        reach(index, 3000);
+        spReach();
+        if (chance(heat * 0.8)) hot();
+        lateHold();
+        if (chance(0.5)) push();
+        break;
+      case "kecchi":
+        // Plain start, then it keeps climbing after the reach.
+        opening(2600);
+        if (chance(0.6)) notice(0.1);
+        reach(index, 4600);
+        add("chance", "チャンスアップ", "まだ終わらない！", 1600, {
+          cutin: "まだだ",
+        });
+        spReach();
+        hold(index === 3 ? 2 : 3, true);
+        lateHold();
+        if (index <= 1) hot();
+        if (chance(0.7)) push();
+        break;
+      case "revival":
+        opening();
+        earlyHold();
+        if (chance(0.6)) notice(heat * 0.7);
+        reach(index, 3200);
+        if (chance(0.6)) spReach();
+        add("provisional", "……", "ハズレ……？", 2000, { symbol: beside(index) });
+        add("blackout", "……", "まだ終わらない……", 2000);
+        add("revival", "復活", "運命開花", 2000, { cutin: "復活" });
+        if (index === 0) lateHold();
+        break;
+      case "upgrade": {
+        const base = index + between(1, Math.min(2, 3 - index));
+        opening();
+        earlyHold();
+        if (chance(0.5)) notice(heat * 0.6);
+        reach(base, 3600);
+        if (chance(0.3)) spReach();
+        add("settle", "当たり", omikuji[base] + "で決着……？", 2200, {
+          symbol: base,
+        });
+        add("upgrade", "昇格チャンス", "まだ上がある！", 2400, {
+          cutin: "昇格",
+        });
+        if (index === 0) lateHold();
+        if (chance(0.4)) push();
+        break;
+      }
+      case "royal":
+        opening();
+        earlyHold();
+        notice(0.9);
+        pseudo(between(1, 3));
+        reach(0, 3000);
+        spReach();
+        hot();
+        lateHold();
+        push();
+        break;
+      case "kokuchi":
+        // Sudden notification: no reach, the reels just snap to 大吉.
+        opening(between(1800, 3000));
+        add("kokuchi", "一発告知", "神託、降臨", 1800, { cutin: "神" });
+        tier = 5;
+        break;
+      case "puchun":
+        // Power-cut freeze in the first second, then all three reels roll as 大吉.
+        add("spin", "変動開始", "運命が、動き出す", 700);
+        add("puchun", "", "", 2600);
+        add("zenkaiten", "全回転", "大吉全回転", 4400, { cutin: "全回転" });
+        tier = 5;
+        break;
     }
     if (fortune === "大吉")
-      steps.push({
-        state: "fever",
-        label: "大当り",
-        text: "大吉フィーバー",
-        ms: 3800,
-      });
+      add("fever", "大当り", "大吉フィーバー", 3800, { cutin: "大当り" });
     const scale = { short: 0.5, standard: 1, long: 1.35 }[settings.duration];
     return Object.freeze({
       fortune,
       shrine: Object.freeze({ ...shrineData[fortune] }),
+      scenario,
+      hit,
+      reels: Object.freeze(reels),
       tier,
       early,
-      hot,
-      revival,
-      repeats,
-      notice,
-      sp,
-      variant,
-      push,
       steps: Object.freeze(
         steps.map((step) =>
           Object.freeze({ ...step, ms: Math.round(step.ms * scale) }),
@@ -277,6 +405,7 @@
   }
   const engine = {
     omikuji: Object.freeze(omikuji),
+    scenarios,
     defaults,
     normalizeSettings,
     createDraw,
