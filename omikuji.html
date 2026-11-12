@@ -60,27 +60,33 @@
         <h2 id="fortune-title">開運<span>フィーバー</span></h2>
         <p class="intro">祈りを込めて、神託の扉を開こう。</p>
         <div class="stage" data-state="idle" data-tier="0" aria-busy="false">
-          <div class="rays" aria-hidden="true"></div>
-          <div class="torii" aria-hidden="true"><i></i><i></i></div>
-          <div class="particles" aria-hidden="true"></div>
-          <div class="cracks" aria-hidden="true"></div>
-          <p class="stage-label">神託待機中</p>
-          <div class="reels" aria-hidden="true">
-            <span>開</span><span>運</span><span>福</span>
+          <div class="lamps" aria-hidden="true"></div>
+          <div class="screen">
+            <div class="rays" aria-hidden="true"></div>
+            <div class="torii" aria-hidden="true"><i></i><i></i></div>
+            <div class="particles" aria-hidden="true"></div>
+            <p class="stage-label">神託待機中</p>
+            <div class="reels" aria-hidden="true">
+              <div class="reel"><div class="strip"></div></div>
+              <div class="reel"><div class="strip"></div></div>
+              <div class="reel"><div class="strip"></div></div>
+            </div>
+            <p class="effect-caption" aria-hidden="true">
+              あなたと神社を結ぶ一枚
+            </p>
+            <div class="hold" aria-hidden="true">
+              <i class="hold-active"></i><i></i><i></i><i></i>
+            </div>
+            <p class="cutin" aria-hidden="true"></p>
+            <div class="cracks" aria-hidden="true"></div>
           </div>
-          <div class="fortune-card" aria-hidden="true">
-            <small>奉 納</small><strong>御神籤</strong><small>運命開花</small>
-          </div>
-          <p class="effect-caption" aria-hidden="true">
-            あなたと神社を結ぶ一枚
-          </p>
           <p class="result" role="status" aria-live="polite">
             さあ、運命の神社に出会おう
           </p>
         </div>
         <div class="actions">
           <button id="draw-button" class="primary">
-            おみくじを引く <span>⟶</span>
+            おみくじを引く
           </button>
           <button id="skip-button" class="secondary" hidden>
             演出をスキップして結果へ

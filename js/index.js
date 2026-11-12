@@ -9,8 +9,9 @@
   const result = document.querySelector(".result");
   const label = document.querySelector(".stage-label");
   const caption = document.querySelector(".effect-caption");
-  const card = document.querySelector(".fortune-card strong");
-  const reels = [...document.querySelectorAll(".reels span")];
+  const cutin = document.querySelector(".cutin");
+  const hold = document.querySelector(".hold-active");
+  const reels = [...document.querySelectorAll(".reel")];
   const info = document.querySelector(".shrine-info");
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
   let settings;
@@ -43,13 +44,27 @@
       }
     });
   }
+  function reduced() {
+    return settings.reduced || motion.matches;
+  }
   function applyPreferences() {
-    const reduced = settings.reduced || motion.matches;
-    stage.classList.toggle("reduced", reduced);
-    stage.classList.toggle("can-shake", settings.shake && !reduced);
+    stage.classList.toggle("reduced", reduced());
+    stage.classList.toggle("can-shake", settings.shake && !reduced());
   }
   motion.addEventListener("change", applyPreferences);
   applyPreferences();
+  // Each strip holds three copies of the five fortunes so the CSS spin loops seamlessly.
+  reels.forEach((reel, i) => {
+    const strip = reel.querySelector(".strip");
+    for (let n = 0; n < 15; n++) {
+      const symbol = document.createElement("span");
+      symbol.textContent = engine.omikuji[n % 5];
+      symbol.dataset.f = n % 5;
+      strip.append(symbol);
+    }
+    reel.style.setProperty("--pos", [0, 2, 4][i]);
+    reel.dataset.mode = "idle";
+  });
   // Fixed particle pool: no per-frame DOM allocation, fewer particles on mobile via CSS.
   const particles = document.querySelector(".particles");
   for (let i = 0; i < 24; i++) {
@@ -62,6 +77,7 @@
   let current = null;
   let timer = null;
   let ticker = null;
+  let subTimers = [];
   let running = false;
   let finished = false;
   let cursor = 0;
@@ -69,7 +85,37 @@
   function clearTimers() {
     clearTimeout(timer);
     clearInterval(ticker);
+    subTimers.forEach(clearTimeout);
     timer = ticker = null;
+    subTimers = [];
+  }
+  function later(fn, ms) {
+    subTimers.push(setTimeout(fn, ms));
+  }
+  // Re-adding a class restarts its CSS animation.
+  function restart(element, className) {
+    element.classList.remove(className);
+    void element.offsetWidth;
+    element.classList.add(className);
+  }
+  function setReel(i, mode, symbol) {
+    const reel = reels[i];
+    if (symbol !== undefined) reel.style.setProperty("--pos", symbol);
+    if (mode === "stop" && reel.dataset.mode === "stop") {
+      reel.dataset.mode = "idle";
+      void reel.offsetWidth;
+    }
+    reel.dataset.mode = mode;
+  }
+  function spinAll() {
+    reels.forEach((_, i) => setReel(i, "spin"));
+  }
+  function fortuneIndex() {
+    return engine.omikuji.indexOf(current.fortune);
+  }
+  function showCutin(text) {
+    cutin.textContent = text;
+    restart(cutin, "show");
   }
   function destination() {
     return (
@@ -80,15 +126,23 @@
     if (!running || finished) return;
     finished = true;
     clearTimers();
-    stage.dataset.state = current.fortune === "大吉" ? "fever" : "result";
+    const fever = current.fortune === "大吉";
+    stage.dataset.state = fever ? "fever" : "result";
     stage.dataset.tier = current.tier;
     stage.setAttribute("aria-busy", "false");
     label.textContent = "神託確定";
-    caption.textContent =
-      current.fortune === "大吉" ? "祝・大吉フィーバー" : "あなたに届いた神託";
-    card.textContent = current.fortune;
-    reels.forEach((reel) => {
-      reel.textContent = current.fortune;
+    caption.textContent = fever ? "祝・大吉フィーバー" : "あなたに届いた神託";
+    restart(caption, "pop");
+    // Left, right, then center: the pachinko stop order.
+    const index = fortuneIndex();
+    [0, 2, 1].forEach((i, n) => {
+      const reel = reels[i];
+      if (
+        reel.dataset.mode === "stop" &&
+        reel.style.getPropertyValue("--pos") === String(index)
+      )
+        return;
+      later(() => setReel(i, "stop", index), reduced() ? 0 : n * 160);
     });
     result.textContent = "あなたの運勢は… " + current.fortune + "！";
     document.querySelector(".shrine-name").textContent = current.shrine.name;
@@ -105,7 +159,7 @@
       () => {
         window.location.href = destination();
       },
-      settings.reduced || motion.matches ? 4500 : 3200,
+      reduced() ? 4500 : 3200,
     );
   }
   function play(index) {
@@ -123,13 +177,53 @@
         ? "演出中・まだ確定ではありません"
         : "神託演出中";
     caption.textContent = step.text;
-    if (["reach", "strong-reach"].includes(step.state)) {
-      reels[0].textContent = reels[1].textContent = current.fortune;
+    restart(caption, "pop");
+    const fortune = fortuneIndex();
+    switch (step.state) {
+      case "spin":
+        spinAll();
+        break;
+      case "early":
+        showCutin("先バレ");
+        break;
+      case "charge":
+        restart(hold, "pop");
+        break;
+      case "pause":
+        // Pseudo-continuation: the reels stop out of line, then spin again.
+        reels.forEach((_, i) => setReel(i, "stop", (cursor + i * 2) % 5));
+        break;
+      case "repeat":
+        spinAll();
+        showCutin("擬似 " + (step.repeat + 1));
+        break;
+      case "reach":
+      case "strong-reach":
+        setReel(1, step.state === "reach" ? "slow" : "slow-strong");
+        setReel(0, "stop", fortune);
+        later(
+          () => {
+            setReel(2, "stop", fortune);
+            showCutin(step.state === "reach" ? "リーチ" : "強リーチ");
+          },
+          reduced() ? 0 : Math.min(380, step.ms / 3),
+        );
+        break;
+      case "hot":
+        showCutin("激熱");
+        break;
+      case "provisional":
+        setReel(1, "stop", engine.omikuji.indexOf("末吉"));
+        break;
+      case "revival":
+        setReel(1, "spin");
+        showCutin("復活");
+        break;
+      case "fever":
+        setReel(1, "stop", fortune);
+        showCutin("大当り");
+        break;
     }
-    if (step.state === "provisional") card.textContent = "末吉？";
-    if (step.state === "blackout") card.textContent = "……";
-    if (step.state === "revival" || step.state === "fever")
-      card.textContent = current.fortune;
     // Only meaningful milestones are announced, never the rapidly changing reels.
     if (
       [
@@ -156,29 +250,14 @@
     skipButton.hidden = !settings.skip;
     stage.setAttribute("aria-busy", "true");
     result.textContent = "抽選を開始しました";
+    // CSS animates spinning reels; reduced mode steps them slowly from here instead.
     ticker = setInterval(() => {
-      const state = stage.dataset.state;
-      if (
-        ![
-          "spin",
-          "charge",
-          "repeat",
-          "early",
-          "reach",
-          "strong-reach",
-          "hot",
-        ].includes(state)
-      )
-        return;
       cursor++;
-      // Visual cycling is deterministic and independent of the outcome RNG.
-      if ((!settings.reduced && !motion.matches) || ++frame % 4 === 0) {
-        card.textContent = engine.omikuji[cursor % 5];
-        reels.forEach((reel, i) => {
-          if (["reach", "strong-reach"].includes(state) && i < 2) return;
-          reel.textContent = engine.omikuji[(cursor + i) % 5];
-        });
-      }
+      if (!reduced() || ++frame % 4 !== 0) return;
+      reels.forEach((reel, i) => {
+        if (["spin", "slow", "slow-strong"].includes(reel.dataset.mode))
+          reel.style.setProperty("--pos", (cursor + i) % 5);
+      });
     }, 110);
     play(0);
   });
