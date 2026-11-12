@@ -29,7 +29,8 @@ function scenarioValue(index, name) {
 // Fortune and scenario are fixed; everything after comes from a seeded RNG.
 function forced(index, name, seed) {
   const head = [(index + 0.5) / 5, scenarioValue(index, name)];
-  const rest = lcg(seed);
+  // Spread small seeds apart; neighbouring LCG seeds start almost identically.
+  const rest = lcg(Math.imul(seed, 2654435761) >>> 0);
   let n = 0;
   return () => (n < head.length ? head[n++] : rest());
 }
@@ -84,6 +85,29 @@ test("every scenario keeps its promises: hits line up, 凶 misses, rainbow only 
           assert.equal(i, 0, label);
         for (const s of draw.steps.filter((s) => s.state === "provisional"))
           assert.notEqual(s.symbol, i, label);
+        const settle = draw.steps.find((s) => s.state === "settle");
+        const climbs = draw.steps
+          .filter((s) => s.state === "promote")
+          .map((s) => s.symbol);
+        if (name === "upgrade") {
+          // Lines up lower, then climbs strictly upward to the real fortune.
+          assert.ok(settle.symbol > i, label);
+          assert.ok(climbs.length >= 1 && climbs.length <= 2, label);
+          assert.equal(climbs.at(-1), i, label);
+          climbs.reduce((previous, symbol) => {
+            assert.ok(symbol < previous, label);
+            return symbol;
+          }, settle.symbol);
+        }
+        if (name === "promote-fail") {
+          assert.equal(settle.symbol, i, label);
+          assert.equal(climbs.length, 0, label);
+          assert.ok(states.includes("promote-fail"), label);
+        }
+        // Every promotion chance is settled with a PUSH.
+        states.forEach((s, n) => {
+          if (s === "promote-chance") assert.equal(states[n + 1], "push", label);
+        });
         const total = draw.steps.reduce((sum, s) => sum + s.ms, 0);
         assert.ok(total >= 2000 && total <= 50000, `${label} ${total}`);
       }
@@ -97,6 +121,19 @@ test("premium and quick paths look the way they are named", () => {
   assert.equal(puchun.tier, 5);
   const quick = createDraw({}, forced(4, "quick", 7));
   assert.ok(!quick.steps.some((s) => s.state === "reach"));
+  // A 中吉 line can be promoted to 大吉, and 末吉 can climb in two steps.
+  const paths = new Set();
+  for (let seed = 1; seed <= 200; seed++) {
+    const d = createDraw({}, forced(0, "upgrade", seed));
+    paths.add(
+      d.steps
+        .filter((s) => ["settle", "promote"].includes(s.state))
+        .map((s) => fortunes[s.symbol])
+        .join(">"),
+    );
+  }
+  assert.ok(paths.has("中吉>大吉"), [...paths].join(" "));
+  assert.ok(paths.has("末吉>中吉>大吉"), [...paths].join(" "));
   // 擬似連 and 保留変化 are not part of every draw.
   const plain = createDraw({}, sequence([0.7, scenarioValue(3, "normal")]));
   assert.ok(!plain.steps.some((s) => ["repeat", "hold"].includes(s.state)));

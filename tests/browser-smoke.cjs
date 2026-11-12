@@ -131,6 +131,31 @@ function script(index, name) {
       console.log("PASS puchun freeze into full rotation");
       await p.close();
     }
+    {
+      const p = await b.newPage();
+      await p.route("https://**/*", (r) => r.abort());
+      await p.clock.install();
+      await p.addInitScript((v) => {
+        let n = 0;
+        Math.random = () => v[n++] ?? 0.5;
+      }, script(0, "upgrade"));
+      await p.goto("http://127.0.0.1:8000/omikuji.html");
+      await p.locator("#draw-button").click();
+      const seen = [];
+      for (let n = 0; n < 500; n++) {
+        await p.clock.runFor(100);
+        const s = await p.locator(".stage").getAttribute("data-state");
+        if (!seen.includes(s)) seen.push(s);
+        // Press PUSH as soon as the promotion chance offers it.
+        if (s === "push") await p.locator(".push").click();
+        if (await p.locator(".shrine-info").isVisible()) break;
+      }
+      for (const s of ["settle", "promote-chance", "pushed", "promote", "fever"])
+        assert.ok(seen.includes(s), s);
+      assert.match(await p.locator(".result").innerText(), /大吉/);
+      console.log("PASS symbol promotion with PUSH", seen.join(","));
+      await p.close();
+    }
     for (let i = 0; i < 5; i++) {
       const p = await b.newPage();
       await p.route("https://**/*", (r) => r.abort());

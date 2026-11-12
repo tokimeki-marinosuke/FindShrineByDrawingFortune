@@ -79,32 +79,35 @@
     Object.freeze([
       ["puchun", 0.12],
       ["kokuchi", 0.1],
-      ["royal", 0.26],
+      ["royal", 0.23],
       ["kecchi", 0.2],
       ["revival", 0.17],
-      ["upgrade", 0.15],
+      ["upgrade", 0.18],
     ]),
     Object.freeze([
       ["normal", 0.1],
       ["notice", 0.15],
-      ["sp", 0.3],
+      ["sp", 0.25],
       ["kecchi", 0.15],
       ["revival", 0.15],
-      ["upgrade", 0.15],
+      ["upgrade", 0.1],
+      ["promote-fail", 0.1],
     ]),
     Object.freeze([
-      ["normal", 0.25],
-      ["notice", 0.25],
+      ["normal", 0.2],
+      ["notice", 0.2],
       ["sp", 0.2],
       ["kecchi", 0.15],
       ["revival", 0.1],
-      ["upgrade", 0.05],
+      ["upgrade", 0.08],
+      ["promote-fail", 0.07],
     ]),
     Object.freeze([
-      ["normal", 0.45],
+      ["normal", 0.4],
       ["notice", 0.25],
-      ["sp", 0.15],
-      ["kecchi", 0.15],
+      ["sp", 0.12],
+      ["kecchi", 0.13],
+      ["promote-fail", 0.1],
     ]),
     Object.freeze([
       ["quick", 0.45],
@@ -248,7 +251,37 @@
     }
     const hot = () =>
       add("hot", "チャンスアップ", "神託発動・激熱", 2200, { cutin: "激熱" });
-    const push = () => add("push", "最終決戦", "ボタンを押せ！", 3200);
+    const push = () =>
+      add("push", "最終決戦", "ボタンを押せ！", 3200, { press: "決" });
+    // 図柄昇格: line up on a lower fortune, then climb one PUSH chance at a time.
+    // With from === to the single chance fails, so a chance is never a sure thing.
+    // At most two climbs, e.g. 末吉→中吉→大吉.
+    function promotion(from, to) {
+      add("settle", "当たり", omikuji[from] + "で当たり！", 2200, {
+        symbol: from,
+      });
+      let at = from;
+      do {
+        const next =
+          at === to ? at : at - between(Math.max(1, at - to - 1), at - to);
+        add(
+          "promote-chance",
+          "図柄昇格チャンス",
+          omikuji[at] + "から昇格なるか！？",
+          1800,
+          { cutin: "昇格？" },
+        );
+        add("push", "図柄昇格チャンス", "PUSHで昇格！", 3200, { press: "昇" });
+        if (next === at)
+          add("promote-fail", "昇格ならず", omikuji[at] + "で決着", 2000);
+        else
+          add("promote", "図柄昇格", omikuji[next] + "に昇格！", 2200, {
+            symbol: next,
+            cutin: "昇格",
+          });
+        at = next;
+      } while (at !== to);
+    }
 
     let reels = [index, index, index];
     // Every hit lines up on its own symbol; misses reach on any hit symbol.
@@ -344,22 +377,25 @@
         if (index === 0) lateHold();
         break;
       case "upgrade": {
-        const base = index + between(1, Math.min(2, 3 - index));
+        // Lines up as a lower fortune (as low as 末吉) and climbs to the real one.
+        const base = index + between(1, 3 - index);
         opening();
         earlyHold();
         if (chance(0.5)) notice(heat * 0.6);
         reach(base, 3600);
         if (chance(0.3)) spReach();
-        add("settle", "当たり", omikuji[base] + "で決着……？", 2200, {
-          symbol: base,
-        });
-        add("upgrade", "昇格チャンス", "まだ上がある！", 2400, {
-          cutin: "昇格",
-        });
-        if (index === 0) lateHold();
-        if (chance(0.4)) push();
+        if (chance(0.4)) hold(index === 0 ? 4 : 3, true);
+        promotion(base, index);
         break;
       }
+      case "promote-fail":
+        opening();
+        earlyHold();
+        if (chance(0.5)) notice(heat * 0.5);
+        reach(index, 3600);
+        if (chance(0.25)) spReach();
+        promotion(index, index);
+        break;
       case "royal":
         opening();
         earlyHold();

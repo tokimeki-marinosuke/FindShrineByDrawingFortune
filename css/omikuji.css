@@ -1302,7 +1302,7 @@ input {
 }
 .stage[data-state="develop"] .screen,
 .stage[data-state="chance"] .screen,
-.stage[data-state="upgrade"] .screen,
+.stage[data-state="promote"] .screen,
 .stage[data-state="kokuchi"] .screen,
 .stage[data-state="pushed"] .screen {
   animation: flash 0.7s ease-out;
@@ -1313,15 +1313,31 @@ input {
 .stage[data-state="develop"] .lamps:before {
   animation-duration: 0.6s;
 }
-/* ---- Script states: miss, settle, upgrade, premium ---- */
+/* ---- Script states: miss, settle, promotion, premium ---- */
 .stage[data-state="chance"] .lamps:before {
   animation-duration: 0.8s;
 }
+/* 図柄昇格: the lined-up reels pulse while the chance is on. */
+.stage[data-state="promote-chance"] .reel {
+  animation: reach-glow 0.35s ease-in-out infinite alternate;
+  box-shadow:
+    0 0 0 2px var(--energy),
+    0 0 22px var(--energy);
+}
+.stage[data-state="promote-chance"] .screen {
+  background: radial-gradient(ellipse at 50% 45%, #5c3d0a, #120a05 75%);
+}
+.stage[data-state="promote-fail"] .reels {
+  filter: saturate(0.6) brightness(0.85);
+}
+.stage[data-state="promote-chance"] .reels:after,
+.stage[data-state="promote"] .reels:after,
+.stage[data-state="promote-fail"] .reels:after,
 .stage[data-state="settle"] .reels:after {
   opacity: 1;
   background: color-mix(in srgb, var(--energy) 14%, transparent);
 }
-.stage[data-state="upgrade"] .lamps:before,
+.stage[data-state="promote"] .lamps:before,
 .stage[data-state="zenkaiten"] .lamps:before,
 .stage[data-state="kokuchi"] .lamps:before {
   background: repeating-conic-gradient(

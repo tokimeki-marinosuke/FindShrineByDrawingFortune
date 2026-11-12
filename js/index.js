@@ -289,8 +289,13 @@
       case "settle":
         setReel(1, "stop", step.symbol);
         break;
-      case "upgrade":
-        spinAll();
+      case "promote":
+        // The lined-up symbols flip in place to the higher fortune.
+        reels.forEach((_, i) => setReel(i, "spin"));
+        later(
+          () => reels.forEach((_, i) => setReel(i, "stop", step.symbol)),
+          reduced() ? 0 : 450,
+        );
         break;
       case "zenkaiten":
         reels.forEach((reel) => {
@@ -324,7 +329,9 @@
         "blackout",
         "revival",
         "settle",
-        "upgrade",
+        "promote-chance",
+        "promote",
+        "promote-fail",
         "zenkaiten",
         "kokuchi",
         "fever",
@@ -338,7 +345,7 @@
     if (!running || finished || stage.dataset.state !== "push") return;
     clearTimeout(timer);
     stage.dataset.state = "pushed";
-    showCutin(current.fortune === "大吉" ? "神" : "決");
+    showCutin(current.steps[stepIndex].press);
     timer = setTimeout(() => play(stepIndex + 1), reduced() ? 0 : 900);
   });
   drawButton.addEventListener("click", () => {
