@@ -1,11 +1,13 @@
 const { chromium } = require("playwright");
 const assert = require("node:assert/strict");
 const { scenarios } = require("../js/omikuji-engine.js");
-// Math.random values that pick a fortune and a named presentation script.
-function script(index, name) {
+// Math.random values that pick a fortune, a named script and the promotion layer
+// (third value: low = 図柄昇格 climb, 0.999 = no promotion).
+function script(index, name, promotion = 0.999) {
   let start = 0;
   for (const [entry, weight] of scenarios[index]) {
-    if (entry === name) return [(index + 0.5) / 5, start + weight / 2];
+    if (entry === name)
+      return [(index + 0.5) / 5, start + weight / 2, promotion];
     start += weight;
   }
   throw new Error(name);
@@ -120,15 +122,25 @@ function script(index, name) {
       await p.goto("http://127.0.0.1:8000/omikuji.html");
       await p.locator("#draw-button").click();
       const seen = [];
-      for (let n = 0; n < 200; n++) {
+      let froze = false;
+      for (let n = 0; n < 300; n++) {
         await p.clock.runFor(100);
         const s = await p.locator(".stage").getAttribute("data-state");
         if (!seen.includes(s)) seen.push(s);
+        // The freeze keeps data-state as it was and only marks the stage.
+        froze ||= (await p.locator(".stage[data-frozen]").count()) > 0;
         if (await p.locator(".shrine-info").isVisible()) break;
       }
-      assert.deepEqual(seen.slice(0, 4), ["spin", "puchun", "zenkaiten", "fever"]);
+      assert.ok(froze);
+      assert.deepEqual(seen.slice(0, 5), [
+        "spin",
+        "puchun",
+        "reboot",
+        "zenkaiten",
+        "fever",
+      ]);
       assert.match(await p.locator(".result").innerText(), /大吉/);
-      console.log("PASS puchun freeze into full rotation");
+      console.log("PASS freeze, puchun and reboot into full rotation");
       await p.close();
     }
     {
@@ -138,7 +150,7 @@ function script(index, name) {
       await p.addInitScript((v) => {
         let n = 0;
         Math.random = () => v[n++] ?? 0.5;
-      }, script(0, "upgrade"));
+      }, script(0, "royal", 0.1));
       await p.goto("http://127.0.0.1:8000/omikuji.html");
       await p.locator("#draw-button").click();
       const seen = [];
@@ -150,7 +162,14 @@ function script(index, name) {
         if (s === "push") await p.locator(".push").click();
         if (await p.locator(".shrine-info").isVisible()) break;
       }
-      for (const s of ["settle", "promote-chance", "pushed", "promote", "fever"])
+      for (const s of [
+        "settle",
+        "promote-chance",
+        "pushed",
+        "promote-roll",
+        "promote",
+        "fever",
+      ])
         assert.ok(seen.includes(s), s);
       assert.match(await p.locator(".result").innerText(), /大吉/);
       console.log("PASS symbol promotion with PUSH", seen.join(","));

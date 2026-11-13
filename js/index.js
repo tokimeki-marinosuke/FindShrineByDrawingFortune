@@ -186,6 +186,7 @@
     if (!running || finished) return;
     finished = true;
     clearTimers();
+    delete stage.dataset.frozen;
     const fever = current.fortune === "大吉";
     stage.dataset.state = fever ? "fever" : current.hit ? "result" : "miss";
     stage.dataset.tier = current.tier;
@@ -228,14 +229,22 @@
       return;
     }
     const step = current.steps[index];
-    stage.dataset.state = step.state;
+    // A freeze must not change data-state, or state-specific visuals would vanish.
+    if (step.state === "freeze") stage.dataset.frozen = "";
+    else {
+      delete stage.dataset.frozen;
+      stage.dataset.state = step.state;
+    }
     stage.style.setProperty("--ms", step.ms + "ms");
     if (step.tier !== undefined) stage.dataset.tier = step.tier;
     stage.dataset.repeat = step.repeat || 0;
     if (step.variant) stage.dataset.sp = step.variant;
-    label.textContent = step.label;
-    caption.textContent = step.text;
-    restart(caption, "pop");
+    // A freeze keeps whatever was on screen, label and caption included.
+    if (step.label !== null) label.textContent = step.label;
+    if (step.text !== null) {
+      caption.textContent = step.text;
+      restart(caption, "pop");
+    }
     // Cut-ins come with the plan; reaches show theirs once the reach is formed.
     let cutinDelay = 0;
     const fortune = fortuneIndex();
@@ -289,6 +298,13 @@
       case "settle":
         setReel(1, "stop", step.symbol);
         break;
+      case "promote-roll":
+        // The lined-up symbols tremble while the promotion hangs in the balance.
+        reels.forEach((reel) => (reel.dataset.mode = "jitter"));
+        break;
+      case "promote-fail":
+        reels.forEach((_, i) => setReel(i, "stop"));
+        break;
       case "promote":
         // The lined-up symbols flip in place to the higher fortune.
         reels.forEach((_, i) => setReel(i, "spin"));
@@ -330,6 +346,7 @@
         "revival",
         "settle",
         "promote-chance",
+        "promote-roll",
         "promote",
         "promote-fail",
         "zenkaiten",
@@ -363,6 +380,8 @@
     ticker = setInterval(() => {
       cursor++;
       if (!reduced() || ++frame % 4 !== 0) return;
+      // During a freeze nothing may move, not even the slow reduced-motion stepping.
+      if (["freeze", "puchun", "reboot"].includes(stage.dataset.state)) return;
       reels.forEach((reel, i) => {
         if (["spin", "slow", "slow-strong"].includes(reel.dataset.mode))
           reel.style.setProperty("--pos", (cursor + i) % 5);

@@ -77,37 +77,31 @@
   // 大吉〜末吉 end with the reels lined up (当たり); 凶 is the ハズレ and never lines up.
   const scenarios = Object.freeze([
     Object.freeze([
-      ["puchun", 0.12],
-      ["kokuchi", 0.1],
-      ["royal", 0.23],
-      ["kecchi", 0.2],
-      ["revival", 0.17],
-      ["upgrade", 0.18],
+      ["puchun", 0.14],
+      ["kokuchi", 0.12],
+      ["royal", 0.28],
+      ["kecchi", 0.24],
+      ["revival", 0.22],
     ]),
     Object.freeze([
-      ["normal", 0.1],
-      ["notice", 0.15],
-      ["sp", 0.25],
-      ["kecchi", 0.15],
-      ["revival", 0.15],
-      ["upgrade", 0.1],
-      ["promote-fail", 0.1],
-    ]),
-    Object.freeze([
-      ["normal", 0.2],
+      ["normal", 0.15],
       ["notice", 0.2],
-      ["sp", 0.2],
-      ["kecchi", 0.15],
-      ["revival", 0.1],
-      ["upgrade", 0.08],
-      ["promote-fail", 0.07],
+      ["sp", 0.3],
+      ["kecchi", 0.17],
+      ["revival", 0.18],
     ]),
     Object.freeze([
-      ["normal", 0.4],
+      ["normal", 0.25],
       ["notice", 0.25],
-      ["sp", 0.12],
+      ["sp", 0.22],
+      ["kecchi", 0.16],
+      ["revival", 0.12],
+    ]),
+    Object.freeze([
+      ["normal", 0.45],
+      ["notice", 0.28],
+      ["sp", 0.14],
       ["kecchi", 0.13],
-      ["promote-fail", 0.1],
     ]),
     Object.freeze([
       ["quick", 0.45],
@@ -116,6 +110,17 @@
       ["pseudo-miss", 0.08],
     ]),
   ]);
+  // 図柄昇格 is a layer on top of any hit script (not 一発告知 / ぷちゅん):
+  // [climb, fail] rates per fortune. climb reaches on a lower fortune and is
+  // promoted to the real one; fail offers a chance that does not come off.
+  const promotions = Object.freeze([
+    Object.freeze([0.3, 0]),
+    Object.freeze([0.28, 0.12]),
+    Object.freeze([0.2, 0.12]),
+    Object.freeze([0, 0.15]),
+    Object.freeze([0, 0]),
+  ]);
+  const premiums = ["puchun", "kokuchi"];
   function pickScenario(value, table) {
     let total = 0;
     for (const [name, weight] of table) {
@@ -145,6 +150,16 @@
     const index = Math.floor(random() * omikuji.length);
     const fortune = omikuji[index];
     const scenario = pickScenario(random(), scenarios[index]);
+    // The third value always decides the promotion layer, so tools can force it.
+    const promoRoll = random();
+    const [climbRate, failRate] = promotions[index];
+    const promotion = premiums.includes(scenario)
+      ? "none"
+      : promoRoll < climbRate
+        ? "climb"
+        : promoRoll < climbRate + failRate
+          ? "fail"
+          : "none";
     const hit = index < 4;
     const heat = heats[index];
     // These probabilities affect only presentation. Each fortune remains 20%.
@@ -199,7 +214,8 @@
         r < 0.3 ? 3 : 2,
         r < 0.04 ? 4 : r < 0.3 ? 3 : r < 0.7 ? 2 : 1,
       ][index];
-      hold(next, true);
+      // A rainbow before a 中吉 line would spoil the promotion that follows.
+      hold(promotion === "climb" ? Math.min(next, 4) : next, true);
     }
     const level = (warmth) =>
       Math.min(4, Math.floor(random() * (1 + 4 * warmth)));
@@ -251,13 +267,15 @@
     }
     const hot = () =>
       add("hot", "チャンスアップ", "神託発動・激熱", 2200, { cutin: "激熱" });
-    const push = () =>
-      add("push", "最終決戦", "ボタンを押せ！", 3200, { press: "決" });
+    const push = () => {
+      if (promotion === "none")
+        add("push", "最終決戦", "ボタンを押せ！", 3200, { press: "決" });
+    };
     // 図柄昇格: line up on a lower fortune, then climb one PUSH chance at a time.
     // With from === to the single chance fails, so a chance is never a sure thing.
     // At most two climbs, e.g. 末吉→中吉→大吉.
-    function promotion(from, to) {
-      add("settle", "当たり", omikuji[from] + "で当たり！", 2200, {
+    function promote(from, to) {
+      add("settle", "当たり", omikuji[from] + "で当たり！", 2000, {
         symbol: from,
       });
       let at = from;
@@ -268,14 +286,15 @@
           "promote-chance",
           "図柄昇格チャンス",
           omikuji[at] + "から昇格なるか！？",
-          1800,
+          1500,
           { cutin: "昇格？" },
         );
-        add("push", "図柄昇格チャンス", "PUSHで昇格！", 3200, { press: "昇" });
+        add("push", "図柄昇格チャンス", "PUSHで昇格！", 3000, { press: "昇" });
+        add("promote-roll", "図柄昇格チャンス", "……！", 1800);
         if (next === at)
           add("promote-fail", "昇格ならず", omikuji[at] + "で決着", 2000);
         else
-          add("promote", "図柄昇格", omikuji[next] + "に昇格！", 2200, {
+          add("promote", "図柄昇格", omikuji[next] + "に昇格！", 2000, {
             symbol: next,
             cutin: "昇格",
           });
@@ -284,8 +303,11 @@
     }
 
     let reels = [index, index, index];
-    // Every hit lines up on its own symbol; misses reach on any hit symbol.
-    const missSymbol = () => between(0, 3);
+    // Hits finish on their own symbol, but a climbing hit reaches on a lower one first.
+    const line =
+      promotion === "climb" ? index + between(1, 3 - index) : index;
+    // 凶 never reaches on 大吉: that would promise more than a miss can keep.
+    const missSymbol = () => between(1, 3);
     switch (scenario) {
       case "quick": {
         opening(2400);
@@ -329,7 +351,7 @@
       case "normal":
         opening();
         earlyHold();
-        reach(index, 4600);
+        reach(line, 4600);
         if (chance(0.3)) lateHold();
         break;
       case "notice":
@@ -337,7 +359,7 @@
         earlyHold();
         notice(heat);
         if (chance(0.35)) pseudo(1);
-        reach(index, 4200);
+        reach(line, 4200);
         if (chance(0.4)) lateHold();
         break;
       case "sp":
@@ -345,7 +367,7 @@
         earlyHold();
         if (chance(0.6)) notice(heat);
         if (chance(0.4)) pseudo(between(1, 3));
-        reach(index, 3000);
+        reach(line, 3000);
         spReach();
         if (chance(heat * 0.8)) hot();
         lateHold();
@@ -355,7 +377,7 @@
         // Plain start, then it keeps climbing after the reach.
         opening(2600);
         if (chance(0.6)) notice(0.1);
-        reach(index, 4600);
+        reach(line, 4600);
         add("chance", "チャンスアップ", "まだ終わらない！", 1600, {
           cutin: "まだだ",
         });
@@ -369,39 +391,20 @@
         opening();
         earlyHold();
         if (chance(0.6)) notice(heat * 0.7);
-        reach(index, 3200);
+        reach(line, 3200);
         if (chance(0.6)) spReach();
-        add("provisional", "……", "ハズレ……？", 2000, { symbol: beside(index) });
+        add("provisional", "……", "ハズレ……？", 2000, { symbol: beside(line) });
         add("blackout", "……", "まだ終わらない……", 2000);
         add("revival", "復活", "運命開花", 2000, { cutin: "復活" });
         if (index === 0) lateHold();
-        break;
-      case "upgrade": {
-        // Lines up as a lower fortune (as low as 末吉) and climbs to the real one.
-        const base = index + between(1, 3 - index);
-        opening();
-        earlyHold();
-        if (chance(0.5)) notice(heat * 0.6);
-        reach(base, 3600);
-        if (chance(0.3)) spReach();
-        if (chance(0.4)) hold(index === 0 ? 4 : 3, true);
-        promotion(base, index);
-        break;
-      }
-      case "promote-fail":
-        opening();
-        earlyHold();
-        if (chance(0.5)) notice(heat * 0.5);
-        reach(index, 3600);
-        if (chance(0.25)) spReach();
-        promotion(index, index);
         break;
       case "royal":
         opening();
         earlyHold();
         notice(0.9);
-        pseudo(between(1, 3));
-        reach(0, 3000);
+        // Leave room for a promotion when one is coming.
+        pseudo(between(1, promotion === "none" ? 3 : 1));
+        reach(line, 3000);
         spReach();
         hot();
         lateHold();
@@ -414,13 +417,20 @@
         tier = 5;
         break;
       case "puchun":
-        // Power-cut freeze in the first second, then all three reels roll as 大吉.
-        add("spin", "変動開始", "運命が、動き出す", 700);
-        add("puchun", "", "", 2600);
+        // Freeze: the show stops dead mid-frame (labels too), the screen dies like a
+        // CRT, a fake reboot runs, and all three reels come back rolling as 大吉.
+        add("spin", "変動開始", "運命が、動き出す", between(1600, 2600));
+        if (chance(0.5))
+          add("stepup", "ステップアップ予告", "STEP 1", 900, { step: 1 });
+        add("freeze", null, null, 2800);
+        add("puchun", "", "", 1800);
+        add("reboot", "", "", 3200);
         add("zenkaiten", "全回転", "大吉全回転", 4400, { cutin: "全回転" });
         tier = 5;
         break;
     }
+    if (promotion === "climb") promote(line, index);
+    else if (promotion === "fail") promote(index, index);
     if (fortune === "大吉")
       add("fever", "大当り", "大吉フィーバー", 3800, { cutin: "大当り" });
     const scale = { short: 0.5, standard: 1, long: 1.35 }[settings.duration];
@@ -428,6 +438,7 @@
       fortune,
       shrine: Object.freeze({ ...shrineData[fortune] }),
       scenario,
+      promotion,
       hit,
       reels: Object.freeze(reels),
       tier,
@@ -442,6 +453,7 @@
   const engine = {
     omikuji: Object.freeze(omikuji),
     scenarios,
+    promotions,
     defaults,
     normalizeSettings,
     createDraw,
