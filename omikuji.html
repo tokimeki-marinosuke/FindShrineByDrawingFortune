@@ -60,38 +60,78 @@
         <h2 id="fortune-title">開運<span>フィーバー</span></h2>
         <p class="intro">祈りを込めて、神託の扉を開こう。</p>
         <div class="stage" data-state="idle" data-tier="0" aria-busy="false">
-          <div class="rays" aria-hidden="true"></div>
-          <div class="torii" aria-hidden="true"><i></i><i></i></div>
-          <div class="particles" aria-hidden="true"></div>
-          <div class="cracks" aria-hidden="true"></div>
-          <p class="stage-label">神託待機中</p>
-          <div class="reels" aria-hidden="true">
-            <span>開</span><span>運</span><span>福</span>
+          <div class="lamps" aria-hidden="true"></div>
+          <div class="screen">
+            <div class="rays" aria-hidden="true"></div>
+            <div class="torii" aria-hidden="true"><i></i><i></i></div>
+            <div class="sp sp-senbon" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i><i></i>
+            </div>
+            <div class="sp sp-tobira" aria-hidden="true"><i></i><i></i></div>
+            <div class="sp sp-sakura" aria-hidden="true"></div>
+            <div class="swarm" aria-hidden="true"></div>
+            <div class="particles" aria-hidden="true"></div>
+            <p class="stage-label">神託待機中</p>
+            <div class="reels" aria-hidden="true">
+              <div class="reel"><div class="strip"></div></div>
+              <div class="reel"><div class="strip"></div></div>
+              <div class="reel"><div class="strip"></div></div>
+            </div>
+            <p class="effect-caption" aria-hidden="true">
+              あなたと神社を結ぶ一枚
+            </p>
+            <div class="hold" aria-hidden="true">
+              <i class="hold-active"></i><i></i><i></i><i></i>
+            </div>
+            <div class="stepup" aria-hidden="true">
+              <b>STEP</b><span class="stepup-n">1</span>
+              <ol><li></li><li></li><li></li><li></li><li></li></ol>
+            </div>
+            <div class="serif" aria-hidden="true">
+              <img src="img/omikujikun.png" alt="" width="32" height="32" />
+              <p class="bubble"></p>
+            </div>
+            <button class="push" type="button" aria-label="ボタンを押して決着をつける">
+              PUSH
+            </button>
+            <p class="cutin" aria-hidden="true"></p>
+            <div class="cracks" aria-hidden="true"></div>
+            <div class="crt" aria-hidden="true"></div>
+            <div class="boot" aria-hidden="true">
+              <p>SHINTAKU SYSTEM Ver.8</p>
+              <p>神託回路チェック ........ OK</p>
+              <p>運命データ読込 .......... OK</p>
+              <p>再起動しています<span class="boot-dots"></span></p>
+              <i class="boot-bar"></i>
+            </div>
           </div>
-          <div class="fortune-card" aria-hidden="true">
-            <small>奉 納</small><strong>御神籤</strong><small>運命開花</small>
-          </div>
-          <p class="effect-caption" aria-hidden="true">
-            あなたと神社を結ぶ一枚
-          </p>
           <p class="result" role="status" aria-live="polite">
             さあ、運命の神社に出会おう
           </p>
         </div>
         <div class="actions">
           <button id="draw-button" class="primary">
-            おみくじを引く <span>⟶</span>
+            おみくじを引く
           </button>
           <button id="skip-button" class="secondary" hidden>
             演出をスキップして結果へ
           </button>
         </div>
         <section class="shrine-info" hidden aria-label="あなたにおすすめの神社">
-          <p class="eyebrow">あなたの旅の行き先</p>
-          <h3 class="shrine-name"></h3>
-          <p class="shrine-description"></p>
-          <a class="shrine-link"></a>
-          <p class="redirect-note">まもなく神社紹介へ移動します</p>
+          <div class="shrine-photo">
+            <span class="shrine-fortune"></span>
+          </div>
+          <div class="shrine-body">
+            <p class="eyebrow">あなたの旅の行き先</p>
+            <h3 class="shrine-name"></h3>
+            <p class="shrine-area"></p>
+            <ul class="shrine-blessings"></ul>
+            <p class="shrine-description"></p>
+            <a class="shrine-link"></a>
+            <p class="redirect-note">
+              <span class="countdown"></span>秒後に神社紹介へ移動します
+            </p>
+          </div>
         </section>
         <details class="custom-settings">
           <summary>演出カスタム <span>自分好みの神託に</span></summary>

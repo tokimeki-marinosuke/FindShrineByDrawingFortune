@@ -2,60 +2,78 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>明治神宮</title>
+  <title>明治神宮｜おみくじの結果</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="../css/omikuji_result.css">
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Old+Mincho&display=swap" rel="stylesheet">
+  <link rel="icon" href="../img/omikujikun.png" type="image/png">
 </head>
-<body>
-  <div class="main">
-    <!-- 背景画像 -->
-    <div class="background-image" style="background-image: url('../img/meiji.jpg');"></div>
+<body id="top">
+  <header class="topbar">
+    <a href="../index.html">⛩ Find Shrine by Drawing Fortune ⛩</a>
+  </header>
 
-    <div class="result-container">
-      <h1>明治神宮</h1>
-      <p id="omikuji-result" style="display: none; font-size: 1.5rem;"></p>
-
-      <div class="shrine-info">
-        <p>
-          明治神宮は東京都渋谷区にある格式高い神社で、<br>
-          初詣の参拝者数は日本一を誇ります。
+  <main>
+    <section class="hero" style="background-image: url('../img/meiji.jpg');">
+      <div class="hero-inner">
+        <p class="slip" id="omikuji-result" hidden>
+          <small>あなたの運勢</small><strong></strong>
         </p>
-        <p>
-          明治天皇と昭憲皇太后をお祀りし、<br>
-          自然豊かな森に囲まれた癒しの空間です。
-        </p>
-        <a href="https://www.meijijingu.or.jp/">公式ホームページはこちら！</a><br>
-        <a href="../omikuji.html">おみくじに戻る</a>
+        <div class="hero-text">
+          <p class="eyebrow">あなたの旅の行き先</p>
+          <h1>明治神宮</h1>
+          <p class="area">東京・原宿</p>
+          <p class="message"></p>
+        </div>
       </div>
+    </section>
+
+    <div class="content">
+      <article class="card">
+        <section>
+          <h2>この神社について</h2>
+          <p>明治神宮は東京都渋谷区にある格式高い神社で、初詣の参拝者数は日本一を誇ります。</p>
+          <p>明治天皇と昭憲皇太后をお祀りし、自然豊かな森に囲まれた癒しの空間です。</p>
+        </section>
+        <section>
+          <h2>ご利益</h2>
+          <ul class="blessings">
+          <li>家内安全</li>
+          <li>学業成就</li>
+          <li>心願成就</li>
+          <li>安産祈願</li>
+          </ul>
+        </section>
+        <section>
+          <h2>基本情報</h2>
+          <dl class="facts">
+            <dt>所在地</dt>
+            <dd>東京都渋谷区代々木神園町1-1</dd>
+            <dt>アクセス</dt>
+            <dd>JR「原宿駅」または東京メトロ「明治神宮前駅」より徒歩すぐ</dd>
+          </dl>
+        </section>
+        <nav class="actions" aria-label="次の行き先">
+          <a class="button primary" href="../introduction-shrines/meiji2.html">もっと詳しく見る</a>
+          <a class="button" href="https://www.meijijingu.or.jp/" target="_blank" rel="noopener">公式ホームページ ↗</a>
+          <a class="button again" href="../omikuji.html">もう一度おみくじを引く</a>
+        </nav>
+      </article>
     </div>
-  </div>
+  </main>
 
   <footer class="site-footer">
     <div class="footer-inner">
-        <p>2025 六根清浄. All rights reserved.</p>
-        <ul class="footer-links">
+      <p>2025 六根清浄. All rights reserved.</p>
+      <ul class="footer-links">
         <li><a href="../index.html">ホーム</a></li>
         <li><a href="../shrine-list.html">神社一覧</a></li>
         <li><a href="../omikuji.html">おみくじ</a></li>
         <li><a href="#top">トップへ戻る</a></li>
-        </ul>
+      </ul>
     </div>
   </footer>
 
-  <script>
-    // URLから ?result=◯◯ を取得
-    const params = new URLSearchParams(window.location.search);
-    const result = params.get("result");
-
-    if (result) {
-      const container = document.getElementById("omikuji-result");
-      container.textContent = `あなたの運勢は… ${result}！`;
-      container.style.display = "block";
-      if (result.includes('大吉')) {
-        container.classList.add("big-daikichi");
-      }
-    }
-  </script>
+  <script src="../js/shrine-result.js"></script>
 </body>
 </html>

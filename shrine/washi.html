@@ -2,60 +2,77 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>鷲神社</title>
+  <title>鷲神社｜おみくじの結果</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="../css/omikuji_result.css">
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Old+Mincho&display=swap" rel="stylesheet">
+  <link rel="icon" href="../img/omikujikun.png" type="image/png">
 </head>
-<body>
-  <div class="main">
-    <!-- 背景画像 -->
-    <div class="background-image" style="background-image: url('../img/washi.jpg');"></div>
+<body id="top">
+  <header class="topbar">
+    <a href="../index.html">⛩ Find Shrine by Drawing Fortune ⛩</a>
+  </header>
 
-    <div class="result-container">
-      <h1>鷲神社</h1>
-      <p id="omikuji-result" style="display: none; font-size: 1.5rem;"></p>
-
-      <div class="shrine-info">
-        <p>
-          東京都台東区にある鷲神社（おとりさま）は、<br>
-          商売繁盛・開運招福の神様。
+  <main>
+    <section class="hero" style="background-image: url('../img/washi.jpg');">
+      <div class="hero-inner">
+        <p class="slip" id="omikuji-result" hidden>
+          <small>あなたの運勢</small><strong></strong>
         </p>
-        <p>
-          毎年11月の「酉の市」では、<br>
-          多くの人が縁起物の熊手を求めて訪れます。
-        </p>
-        <a href="https://otorisama.or.jp/">公式ホームページはこちら！</a><br>
-        <a href="../omikuji.html">おみくじに戻る</a>
+        <div class="hero-text">
+          <p class="eyebrow">あなたの旅の行き先</p>
+          <h1>鷲神社</h1>
+          <p class="area">東京・浅草</p>
+          <p class="message"></p>
+        </div>
       </div>
+    </section>
+
+    <div class="content">
+      <article class="card">
+        <section>
+          <h2>この神社について</h2>
+          <p>東京都台東区にある鷲神社（おとりさま）は、商売繁盛・開運招福の神様。</p>
+          <p>毎年11月の「酉の市」では、多くの人が縁起物の熊手を求めて訪れます。</p>
+        </section>
+        <section>
+          <h2>ご利益</h2>
+          <ul class="blessings">
+          <li>開運招福</li>
+          <li>商売繁盛</li>
+          <li>家内安全</li>
+          </ul>
+        </section>
+        <section>
+          <h2>基本情報</h2>
+          <dl class="facts">
+            <dt>所在地</dt>
+            <dd>東京都台東区千束3-18-7</dd>
+            <dt>アクセス</dt>
+            <dd>東京メトロ日比谷線「入谷駅」より徒歩約7分</dd>
+          </dl>
+        </section>
+        <nav class="actions" aria-label="次の行き先">
+          <a class="button primary" href="../introduction-shrines/washi2.html">もっと詳しく見る</a>
+          <a class="button" href="https://otorisama.or.jp/" target="_blank" rel="noopener">公式ホームページ ↗</a>
+          <a class="button again" href="../omikuji.html">もう一度おみくじを引く</a>
+        </nav>
+      </article>
     </div>
-  </div>
+  </main>
 
   <footer class="site-footer">
     <div class="footer-inner">
-        <p>2025 六根清浄. All rights reserved.</p>
-        <ul class="footer-links">
+      <p>2025 六根清浄. All rights reserved.</p>
+      <ul class="footer-links">
         <li><a href="../index.html">ホーム</a></li>
         <li><a href="../shrine-list.html">神社一覧</a></li>
         <li><a href="../omikuji.html">おみくじ</a></li>
         <li><a href="#top">トップへ戻る</a></li>
-        </ul>
+      </ul>
     </div>
   </footer>
 
-  <script>
-    // URLから ?result=◯◯ を取得
-    const params = new URLSearchParams(window.location.search);
-    const result = params.get("result");
-
-    if (result) {
-      const container = document.getElementById("omikuji-result");
-      container.textContent = `あなたの運勢は… ${result}！`;
-      container.style.display = "block";
-      if (result.includes('大吉')) {
-        container.classList.add("big-daikichi");
-      }
-    }
-  </script>
+  <script src="../js/shrine-result.js"></script>
 </body>
 </html>

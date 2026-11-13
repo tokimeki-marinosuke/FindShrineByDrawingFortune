@@ -85,168 +85,545 @@ header h1 {
   color: var(--gold);
 }
 h2 {
-  font-size: clamp(2rem, 6vw, 3.8rem);
+  font-family: "Dela Gothic One", "Zen Old Mincho", sans-serif;
+  font-weight: normal;
+  font-size: clamp(2.1rem, 7vw, 4rem);
   margin: 14px 0 8px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.06em;
+  color: #fff;
+  -webkit-text-stroke: 0.14em #8e1414;
+  paint-order: stroke fill;
+  text-shadow:
+    0 0.08em 0 #3b0507,
+    0 0 0.5em #ff563c66;
 }
 h2 span {
-  color: var(--gold);
+  color: #ffd54a;
 }
-.intro {
-  color: var(--muted);
-  font-size: 0.9rem;
-  margin-bottom: 30px;
-}
+/* Pachinko cabinet: chase lamps around an arched LCD. */
 .stage {
   --energy: #f5efdf;
+  --cell: clamp(70px, 19vw, 104px);
+  --reel-w: clamp(84px, 24vw, 150px);
   isolation: isolate;
   position: relative;
-  min-height: 440px;
-  border: 1px solid #82623e;
-  border-radius: 180px 180px 12px 12px;
-  background: radial-gradient(
-    ellipse at center,
-    #533c28 0,
-    #21141b 50%,
-    #0c0c13 90%
-  );
-  overflow: hidden;
+  padding: 20px;
+  border-radius: 64px 64px 22px 22px;
+  background: linear-gradient(160deg, #3d1d24, #170c13 45%, #2c141a);
   box-shadow:
-    inset 0 0 0 7px #120e12,
-    inset 0 0 0 8px #493621,
-    0 24px 65px #0006;
-  padding: 24px 18px;
+    inset 0 0 0 2px #d6ae62,
+    inset 0 0 0 5px #1a0e12,
+    inset 0 0 0 6px #6e5130,
+    0 0 46px color-mix(in srgb, var(--energy) 22%, transparent),
+    0 30px 70px #000a;
+  transition: box-shadow 0.3s;
 }
-.stage:after {
+.lamps {
+  position: absolute;
+  inset: 7px;
+  border-radius: 58px 58px 16px 16px;
+  padding: 6px;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.lamps:before {
   content: "";
   position: absolute;
-  inset: 9px;
-  border: 1px solid var(--energy);
-  border-radius: inherit;
-  opacity: 0.25;
-  pointer-events: none;
-  z-index: 7;
+  inset: -60%;
+  background: repeating-conic-gradient(
+    var(--energy) 0 2.5deg,
+    transparent 2.5deg 7.5deg
+  );
+  opacity: 0.45;
+  animation: radiate 14s linear infinite;
 }
-.stage-label {
-  position: relative;
-  z-index: 3;
-  letter-spacing: 0.35em;
-  font-size: 0.7rem;
-  color: var(--gold);
-  margin: 0 0 14px;
+.stage:not([data-state="idle"]) .lamps:before {
+  opacity: 0.95;
+  animation-duration: 3s;
 }
-.fortune-card {
+.screen {
   position: relative;
-  z-index: 2;
-  width: 128px;
-  height: 202px;
-  margin: 16px auto 12px;
-  border: double 5px #b58c50;
-  background: linear-gradient(135deg, #fff8dd, #e4d1a7);
-  color: #521e23;
-  box-shadow: 0 0 30px color-mix(in srgb, var(--energy) 25%, transparent);
+  z-index: 1;
+  overflow: hidden;
+  min-height: 410px;
+  padding: 22px 10px 20px;
+  border-radius: 46px 46px 12px 12px;
+  background: radial-gradient(
+    ellipse at 50% 18%,
+    #34295e 0,
+    #130f28 55%,
+    #07060f 100%
+  );
+  box-shadow:
+    inset 0 0 0 2px #d9b46a,
+    inset 0 0 0 4px #0b0810,
+    inset 0 0 40px #000c;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-around;
-  transform: rotate(-4deg);
+  justify-content: center;
+  gap: 12px;
+  transition: background 0.3s;
 }
-.fortune-card small {
-  font-size: 0.65rem;
-  letter-spacing: 0.3em;
+/* Glass reflection over the LCD. */
+.screen:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  background: linear-gradient(115deg, #ffffff12 0 28%, transparent 28.5%);
 }
-.fortune-card strong {
-  font-size: 2.5rem;
-  writing-mode: vertical-rl;
-  letter-spacing: 0.1em;
+/* Phase name plate: always says which pattern is playing. */
+.stage-label {
+  position: relative;
+  z-index: 7;
+  margin: 0;
+  padding: 6px 20px;
+  border: 1px solid color-mix(in srgb, var(--energy) 60%, transparent);
+  border-radius: 999px;
+  background: linear-gradient(#000c, #0009);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--energy) 35%, transparent);
+  letter-spacing: 0.2em;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--energy);
 }
 .reels {
   position: relative;
   z-index: 2;
   display: flex;
   justify-content: center;
-  gap: 15px;
+  gap: clamp(5px, 1.6vw, 12px);
+  padding: 8px;
+  border-radius: 16px;
+  background: linear-gradient(#000a, #0006);
+  box-shadow:
+    inset 0 0 0 1px #d9b46a77,
+    0 0 0 1px #0008;
 }
-.reels span {
-  min-width: 55px;
-  border-bottom: 1px solid #9c7945;
-  padding: 3px 10px;
-  color: var(--gold);
-  font-size: 1.2rem;
+/* Payline across the middle row. */
+.reels:after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  height: var(--cell);
+  transform: translateY(-50%);
+  border-block: 1px solid color-mix(in srgb, var(--energy) 55%, transparent);
+  pointer-events: none;
+  opacity: 0.55;
+}
+.reel {
+  --pos: 0;
+  position: relative;
+  width: var(--reel-w);
+  height: calc(var(--cell) * 1.5);
+  overflow: hidden;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #05040c, #1f1940 50%, #05040c);
+  transition: box-shadow 0.25s;
+}
+.reel:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    #05040c,
+    transparent 26%,
+    transparent 74%,
+    #05040c
+  );
+}
+.strip {
+  transform: translateY(calc(var(--cell) * (-4.75 - var(--pos))));
+}
+.strip span {
+  --c: #c4001a;
+  --d: #4a0208;
+  --fill: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--cell);
+  white-space: nowrap;
+  font-family: "Dela Gothic One", "Zen Old Mincho", sans-serif;
+  font-size: calc(var(--cell) * 0.5);
+  line-height: 1;
+  color: var(--fill);
+  -webkit-text-stroke: calc(var(--cell) * 0.045) var(--c);
+  paint-order: stroke fill;
+  text-shadow:
+    0 calc(var(--cell) * 0.04) 0 var(--d),
+    0 0 14px color-mix(in srgb, var(--c) 70%, transparent);
+}
+.strip span[data-f="0"] {
+  --fill: #ffe45c;
+  --c: #d0101f;
+  --d: #520207;
+}
+.strip span[data-f="1"] {
+  --c: #f06414;
+  --d: #5a2000;
+}
+.strip span[data-f="2"] {
+  --c: #17a556;
+  --d: #053a1c;
+}
+.strip span[data-f="3"] {
+  --c: #2c6fe4;
+  --d: #0a2156;
+}
+.strip span[data-f="4"] {
+  --fill: #e9dcff;
+  --c: #6a3fa2;
+  --d: #24113f;
+}
+.reel[data-mode="spin"] .strip {
+  animation: reel-spin 0.36s linear infinite;
+  filter: blur(1.4px);
+}
+.reel[data-mode="slow"] .strip,
+.reel[data-mode="slow-strong"] .strip {
+  animation: reel-spin 1.1s linear infinite;
+}
+.reel[data-mode="slow-strong"] .strip {
+  animation-duration: 1.6s;
+}
+/* Offset phases so the three reels never scroll in lockstep. */
+.reel:nth-child(2):not([data-mode="stop"]):not([data-mode="zen"]) .strip {
+  animation-delay: -0.13s;
+}
+.reel:nth-child(3):not([data-mode="stop"]):not([data-mode="zen"]) .strip {
+  animation-delay: -0.25s;
+}
+.reel[data-mode="slow"],
+.reel[data-mode="slow-strong"] {
+  box-shadow:
+    0 0 0 2px var(--energy),
+    0 0 22px var(--energy);
+}
+.reel[data-mode="slow-strong"] {
+  animation: reach-glow 0.5s ease-in-out infinite alternate;
+}
+.reel[data-mode="stop"] .strip {
+  animation: reel-land 0.34s ease-out;
 }
 .effect-caption {
   position: relative;
   z-index: 4;
-  font-size: clamp(1.2rem, 4vw, 2rem);
+  min-height: 1.5em;
+  margin: 0;
+  font-family: "Kaisei Decol", "Zen Old Mincho", serif;
+  font-size: clamp(1.15rem, 4vw, 1.8rem);
   font-weight: bold;
-  margin: 16px 0 5px;
+  letter-spacing: 0.08em;
   color: var(--energy);
-  text-shadow: 0 2px 12px #000;
+  text-shadow:
+    0 2px 0 #000,
+    0 0 16px color-mix(in srgb, var(--energy) 60%, transparent);
+}
+.effect-caption.pop {
+  animation: announce 0.45s ease-out;
+}
+/* Hold lamps: the current hold changes colour as the draw heats up. */
+.hold {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: #0008;
+  box-shadow: inset 0 0 0 1px #ffffff1a;
+}
+.hold i {
+  position: relative;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    #fff,
+    #8b8aa3 60%,
+    #2e2d44
+  );
+  opacity: 0.4;
+}
+.hold .hold-active {
+  width: 28px;
+  height: 28px;
+  margin-right: 6px;
+  opacity: 0.55;
+  background: radial-gradient(
+    circle at 35% 30%,
+    #fff 0 12%,
+    var(--energy) 46%,
+    color-mix(in srgb, var(--energy) 40%, #000) 100%
+  );
+  transition: opacity 0.2s;
+}
+.stage:not([data-state="idle"]) .hold-active {
+  opacity: 1;
+  box-shadow: 0 0 18px var(--energy);
+}
+.hold-active:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 35% 30%, #fff 0 12%, transparent 42%),
+    conic-gradient(#ff4d6d, #ffb703, #fff04d, #55e06b, #3ad1ff, #6a6bff, #e15cff, #ff4d6d);
+}
+.stage[data-tier="5"] .hold-active:before {
+  opacity: 1;
+  animation: radiate 1.4s linear infinite;
+}
+.hold-active.pop {
+  animation: hold-pop 0.42s ease-out;
+}
+.cutin {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  pointer-events: none;
+  opacity: 0;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: clamp(2.8rem, 12vw, 5.4rem);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: #fff;
+  -webkit-text-stroke: 0.13em #d81b2a;
+  paint-order: stroke fill;
+  text-shadow:
+    0 0.07em 0 #4a0208,
+    0 0 0.4em #ff3b3b;
+}
+.cutin.show {
+  animation: cutin 1.15s ease-out forwards;
+}
+.stage[data-state="strong-reach"] .cutin,
+.stage[data-state="fever"] .cutin {
+  color: #ffe45c;
+  -webkit-text-stroke-color: #a3000f;
+}
+.stage[data-state="repeat"] .cutin {
+  -webkit-text-stroke-color: #1f6fe0;
+  text-shadow:
+    0 0.07em 0 #071d47,
+    0 0 0.4em #3aa0ff;
+}
+.stage[data-state="hot"] .cutin {
+  font-size: clamp(3.6rem, 16vw, 7rem);
+  color: #fff3a8;
+  -webkit-text-stroke-color: #c40000;
+  text-shadow:
+    0 0.07em 0 #3a0000,
+    0 0 0.3em #ff7a00,
+    0 0 0.7em #ff2a00;
+}
+.stage[data-state="revival"] .cutin {
+  -webkit-text-stroke-color: #7a4cff;
+  text-shadow:
+    0 0.07em 0 #1f0b4d,
+    0 0 0.4em #b18cff;
 }
 .result {
   position: relative;
   z-index: 4;
   min-height: 1.5em;
+  margin: 14px auto 0;
+  max-width: 520px;
+  padding: 9px 18px;
+  border: 1px solid #6e5130;
+  border-radius: 999px;
+  background: #0008;
   font-size: 0.85rem;
-  color: #e8d8bd;
-  margin: 12px 0;
+  color: #f2dfb8;
 }
 .actions {
   max-width: 560px;
-  margin: 26px auto;
+  margin: 30px auto;
 }
 .primary {
   width: 100%;
   padding: 20px 26px;
-  border: 1px solid #f4c779;
-  border-radius: 4px;
-  background: linear-gradient(110deg, #8b201e, #c14332, #84201d);
-  color: #fff2d3;
-  font-size: 1.3rem;
+  border: 2px solid #ffd27a;
+  border-radius: 999px;
+  background: linear-gradient(#ff6c4f, #d3201c 55%, #8f0f12);
+  color: #fff;
+  font-family: "Dela Gothic One", "Zen Old Mincho", sans-serif;
+  font-size: 1.35rem;
   letter-spacing: 0.12em;
+  text-shadow: 0 2px 0 #6a0a0a;
   box-shadow:
-    0 5px 0 #481819,
-    0 12px 26px #0006;
+    inset 0 2px 0 #ffffff80,
+    inset 0 -8px 14px #0005,
+    0 6px 0 #5a0b0e,
+    0 12px 28px #0007;
   cursor: pointer;
+  transition:
+    transform 0.08s,
+    box-shadow 0.08s;
 }
-.primary span {
-  float: right;
+.primary:enabled {
+  animation: beckon 1.8s ease-in-out infinite;
 }
 .primary:hover:enabled {
-  filter: brightness(1.15);
+  filter: brightness(1.12);
+}
+.primary:active:enabled {
+  transform: translateY(5px);
+  box-shadow:
+    inset 0 2px 0 #ffffff80,
+    inset 0 -8px 14px #0005,
+    0 1px 0 #5a0b0e,
+    0 6px 16px #0007;
 }
 .primary:disabled {
   opacity: 0.6;
   cursor: wait;
+  font-size: 1.05rem;
 }
 .secondary {
   margin-top: 20px;
-  background: transparent;
+  background: #0006;
   border: 1px solid #816848;
-  padding: 10px 18px;
+  padding: 10px 22px;
   color: var(--gold);
-  border-radius: 4px;
+  border-radius: 999px;
   cursor: pointer;
 }
+/* Result card: photo with an omikuji slip, then the shrine at a glance. */
 .shrine-info {
-  background: #241b20;
-  border: 1px solid #907044;
-  padding: 24px;
-  margin: 24px auto;
-  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  margin: 28px auto;
+  overflow: hidden;
+  text-align: left;
+  border: 1px solid #a07a45;
+  border-radius: 18px;
+  background: linear-gradient(160deg, #2a1d22, #160f14);
+  box-shadow:
+    0 0 0 4px #1a0e12,
+    0 0 0 5px #5d4329,
+    0 24px 60px #0009;
+  animation: card-in 0.7s ease-out;
+}
+.shrine-photo {
+  position: relative;
+  min-height: 300px;
+  background: #000 center / cover;
+}
+.shrine-photo:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 60%, #2a1d22);
+}
+.shrine-fortune {
+  position: absolute;
+  z-index: 1;
+  top: 18px;
+  left: 18px;
+  padding: 16px 10px;
+  writing-mode: vertical-rl;
+  border: 3px double #a3192a;
+  border-radius: 4px;
+  background: linear-gradient(#fffaf0, #f1e4c6);
+  color: #a3192a;
+  font-family: "Dela Gothic One", "Zen Old Mincho", sans-serif;
+  font-size: 2rem;
+  letter-spacing: 0.15em;
+  box-shadow: 0 8px 20px #0008;
+  transform: rotate(-3deg);
+}
+.shrine-info[data-fortune="大吉"] .shrine-fortune {
+  border-color: #c58b00;
+  background: linear-gradient(#fff8d6, #ffe08a);
+  box-shadow:
+    0 8px 20px #0008,
+    0 0 26px #ffd54a99;
+}
+.shrine-body {
+  padding: 26px 28px 22px;
+}
+.shrine-body .eyebrow {
+  margin: 0;
 }
 .shrine-name {
-  font-size: 1.7rem;
-  margin: 10px;
+  margin: 8px 0 4px;
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  letter-spacing: 0.08em;
+  color: #fff3d6;
+}
+.shrine-area {
+  margin: 0 0 14px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.shrine-area:before {
+  content: "◉ ";
+  color: #d0473a;
+}
+.shrine-blessings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+.shrine-blessings li {
+  padding: 4px 12px;
+  border: 1px solid #c79a55;
+  border-radius: 999px;
+  background: #c79a5522;
+  font-size: 0.75rem;
+  color: var(--gold);
 }
 .shrine-description {
+  margin: 0 0 18px;
   line-height: 1.9;
+  font-size: 0.9rem;
 }
 .shrine-link {
-  display: inline-block;
-  padding: 12px 18px;
-  border: 1px solid var(--gold);
+  display: block;
+  padding: 13px 18px;
+  border-radius: 999px;
+  background: linear-gradient(#f6d58a, #c79a55);
+  color: #3a1f0c;
+  text-align: center;
   text-decoration: none;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  box-shadow: 0 4px 0 #6e5130;
+}
+.shrine-link:hover {
+  filter: brightness(1.08);
+}
+.redirect-note {
+  margin: 10px 0 0;
+  text-align: center;
+}
+.countdown {
+  display: inline-block;
+  min-width: 1.4em;
+  font-size: 1rem;
+  color: var(--gold);
 }
 .redirect-note,
 .fine-print {
@@ -388,34 +765,38 @@ input {
   background: repeating-conic-gradient(
     from 0deg,
     transparent 0 13deg,
-    #f9cf7025 14deg 19deg,
+    color-mix(in srgb, var(--energy) 16%, transparent) 14deg 19deg,
     transparent 20deg 30deg
   );
-  opacity: 0.25;
+  opacity: 0.35;
   z-index: -1;
 }
 .torii {
   position: absolute;
-  inset: 70px 18% 40px;
+  top: 9%;
+  left: 14%;
+  right: 14%;
+  bottom: 22%;
   z-index: 0;
-  border-top: 15px solid #9b342b;
-  opacity: 0.35;
+  border-top: 14px solid #b23a2e;
+  border-radius: 40% 40% 0 0 / 14px 14px 0 0;
+  opacity: 0.18;
 }
 .torii:before {
   content: "";
   position: absolute;
-  top: 28px;
-  left: -8%;
-  right: -8%;
-  height: 9px;
-  background: #9b342b;
+  top: 26px;
+  left: -6%;
+  right: -6%;
+  height: 8px;
+  background: #b23a2e;
 }
 .torii i {
   position: absolute;
-  width: 15px;
+  width: 14px;
   top: 0;
   bottom: 0;
-  background: #9b342b;
+  background: linear-gradient(90deg, #8b2a21, #c2483a, #8b2a21);
 }
 .torii i:first-child {
   left: 10%;
@@ -435,7 +816,7 @@ input {
   top: 110%;
   width: 4px;
   height: 4px;
-  background: var(--gold);
+  background: var(--energy);
   border-radius: 50%;
   opacity: 0;
   animation: float-up 4s var(--delay) infinite linear;
@@ -447,10 +828,7 @@ input {
 .stage:not([data-state="idle"]) .rays {
   animation: radiate 20s linear infinite;
 }
-.stage[data-state="spin"] .fortune-card,
-.stage[data-state="repeat"] .fortune-card {
-  animation: pulse 0.6s ease-in-out infinite alternate;
-}
+/* Hold colours: white, blue, green, red, gold, rainbow. */
 .stage[data-tier="1"] {
   --energy: #66b9ff;
 }
@@ -462,74 +840,72 @@ input {
 }
 .stage[data-tier="4"],
 .stage[data-tier="5"] {
-  --energy: #ffdb79;
+  --energy: #ffd85e;
 }
-.stage[data-tier="4"] .fortune-card,
-.stage[data-tier="5"] .fortune-card {
-  border-color: #ffde83;
-  animation: golden 1.8s ease-in-out infinite alternate;
-}
-.stage[data-tier="5"] .fortune-card {
-  background: linear-gradient(
-    145deg,
-    #ffc8c8,
-    #ffefb5,
-    #bcffe0,
-    #c3ddff,
-    #e9c9ff
+.stage[data-tier="5"] .lamps:before {
+  background: repeating-conic-gradient(
+    #ff4d6d 0 2deg,
+    transparent 2deg 4deg,
+    #ffd23f 4deg 6deg,
+    transparent 6deg 8deg,
+    #4dd2ff 8deg 10deg,
+    transparent 10deg 12deg
   );
 }
 .stage[data-state="early"] {
+  --energy: #ff5b52;
+}
+.stage[data-state="early"] .screen {
   box-shadow:
-    inset 0 0 65px #e23936,
-    0 0 25px #d52c3b55;
+    inset 0 0 0 2px #ff4d4d,
+    inset 0 0 70px #e23936aa;
 }
-.stage[data-state="early"] .effect-caption {
-  color: #ff8d81;
-  animation: announce 0.6s ease-out;
+.stage[data-state="pause"] .reels,
+.stage[data-state="provisional"] .reels {
+  filter: saturate(0.75);
 }
-.stage[data-state="reach"],
-.stage[data-state="strong-reach"] {
-  background: #090810;
+.stage[data-state="reach"] .screen,
+.stage[data-state="strong-reach"] .screen {
+  background: radial-gradient(ellipse at 50% 45%, #1f1838, #07060d 70%);
 }
 .stage[data-state="reach"] .torii,
 .stage[data-state="strong-reach"] .torii {
   animation: gate 1.5s ease-out forwards;
-  opacity: 0.8;
+}
+.stage[data-state="strong-reach"] .screen {
+  background: radial-gradient(ellipse at 50% 45%, #4a1420, #0b0509 70%);
 }
 .stage[data-state="strong-reach"] .rays {
-  opacity: 0.8;
-}
-.stage[data-state="strong-reach"] .effect-caption {
-  color: var(--gold);
+  opacity: 0.85;
 }
 .stage[data-repeat="3"] .effect-caption {
-  font-size: clamp(1.5rem, 5vw, 2.8rem);
+  font-size: clamp(1.5rem, 5vw, 2.6rem);
   color: #ffe29a;
 }
-.stage[data-state="hot"] {
-  background: radial-gradient(ellipse, #9a302c, #2e1019 75%);
+.stage[data-state="hot"] .screen {
+  background: radial-gradient(ellipse at 50% 55%, #b3261e, #3a0b14 70%, #12050a);
 }
-.stage[data-state="hot"] .effect-caption {
-  font-size: clamp(1.7rem, 5vw, 3rem);
-  color: #ffe1a0;
-  animation: announce 0.6s ease-out;
+.stage[data-state="hot"] .lamps:before {
+  animation:
+    radiate 1s linear infinite,
+    blink 0.24s steps(2) infinite;
 }
-.stage[data-state="blackout"] {
-  background: #050508;
+.stage[data-state="blackout"] .screen {
+  background: #030305;
 }
+.stage[data-state="blackout"] .lamps,
 .stage[data-state="blackout"] .rays,
 .stage[data-state="blackout"] .particles,
 .stage[data-state="blackout"] .torii,
-.stage[data-state="blackout"] .fortune-card,
-.stage[data-state="blackout"] .reels {
+.stage[data-state="blackout"] .reels,
+.stage[data-state="blackout"] .hold {
   opacity: 0;
 }
 .cracks {
   display: none;
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: 5;
   pointer-events: none;
   background: conic-gradient(
     from 10deg,
@@ -546,20 +922,51 @@ input {
   display: block;
   animation: shatter 0.9s ease-out forwards;
 }
+/* Settled: all three reels line up on the payline. */
+.stage[data-state="result"] .reels:after,
+.stage[data-state="fever"] .reels:after {
+  opacity: 1;
+  background: color-mix(in srgb, var(--energy) 14%, transparent);
+  animation: payline 0.7s ease-in-out 0.5s infinite alternate;
+}
+.stage[data-state="result"] .reel,
+.stage[data-state="fever"] .reel {
+  box-shadow:
+    0 0 0 2px var(--energy),
+    0 0 18px color-mix(in srgb, var(--energy) 70%, transparent);
+}
 .stage[data-state="fever"] {
   --energy: #ffe3a1;
-  background: radial-gradient(ellipse, #98702f88, #392015 55%, #130b12);
+}
+.stage[data-state="fever"] .screen {
+  background:
+    radial-gradient(ellipse at 50% 50%, #ffcf5a55, transparent 60%),
+    conic-gradient(
+      from 0deg at 50% 60%,
+      #5a1630,
+      #1f2a63,
+      #14503f,
+      #5c4a12,
+      #5a1630
+    );
+}
+.stage[data-state="fever"] .lamps:before {
+  background: repeating-conic-gradient(
+    #ff4d6d 0 2deg,
+    transparent 2deg 4deg,
+    #ffd23f 4deg 6deg,
+    transparent 6deg 8deg,
+    #4dd2ff 8deg 10deg,
+    transparent 10deg 12deg
+  );
+  animation-duration: 1.2s;
 }
 .stage[data-state="fever"] .rays {
-  opacity: 0.8;
+  opacity: 0.9;
 }
-.stage[data-state="fever"] .fortune-card {
-  width: 145px;
-  transform: rotate(0);
-  animation: celebrate 0.9s ease-out;
-}
-.stage[data-state="fever"] .fortune-card strong {
-  font-size: 3.4rem;
+.stage[data-state="fever"] .effect-caption {
+  font-size: clamp(1.5rem, 5vw, 2.4rem);
+  color: #ffe45c;
 }
 .stage[data-state="fever"] .particles i {
   width: 9px;
@@ -577,8 +984,838 @@ input {
 .can-shake[data-state="hot"] {
   animation: shake 0.32s ease-out;
 }
-.stage[data-state="pause"] .fortune-card {
-  transform: rotate(0);
+.can-shake[data-state="strong-reach"] .screen {
+  animation: shake 0.32s ease-out 0.4s;
+}
+/* ---- Notice patterns ---- */
+.stepup,
+.serif,
+.swarm,
+.sp,
+.push {
+  display: none;
+}
+.stepup {
+  --step-c: #9aa3b5;
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  width: min(76%, 380px);
+  height: fit-content;
+  margin: auto;
+  padding: 14px 18px 16px;
+  border: 3px solid #fff;
+  border-radius: 16px;
+  background: linear-gradient(
+    160deg,
+    var(--step-c),
+    color-mix(in srgb, var(--step-c) 30%, #000)
+  );
+  box-shadow:
+    0 0 0 3px #0008,
+    0 0 40px var(--step-c);
+  font-family: "Dela Gothic One", sans-serif;
+  color: #fff;
+}
+.stage[data-state="stepup"] .stepup {
+  display: block;
+}
+.stepup.pop {
+  animation: stamp 0.4s ease-out;
+}
+.stepup b {
+  display: block;
+  font-weight: normal;
+  font-size: 1.1rem;
+  letter-spacing: 0.4em;
+}
+.stepup-n {
+  display: block;
+  font-size: clamp(3.4rem, 13vw, 5rem);
+  line-height: 1.05;
+  -webkit-text-stroke: 0.1em color-mix(in srgb, var(--step-c) 50%, #000);
+  paint-order: stroke fill;
+}
+.stepup ol {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.stepup li {
+  width: 34px;
+  height: 9px;
+  border-radius: 3px;
+  background: #fff3;
+}
+.stage[data-step="1"] .stepup li:nth-child(-n + 1),
+.stage[data-step="2"] .stepup li:nth-child(-n + 2),
+.stage[data-step="3"] .stepup li:nth-child(-n + 3),
+.stage[data-step="4"] .stepup li:nth-child(-n + 4),
+.stage[data-step="5"] .stepup li {
+  background: #fff;
+  box-shadow: 0 0 8px #fff;
+}
+.stage[data-step="2"] .stepup {
+  --step-c: #2f7de1;
+}
+.stage[data-step="3"] .stepup {
+  --step-c: #1fa35a;
+}
+.stage[data-step="4"] .stepup {
+  --step-c: #d8262b;
+}
+.stage[data-step="5"] .stepup {
+  --step-c: #e0a400;
+  border-color: #fff6c2;
+}
+.stage[data-step="5"] .stepup:before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border-radius: 20px;
+  background: conic-gradient(
+    #ff4d6d,
+    #ffb703,
+    #fff04d,
+    #55e06b,
+    #3ad1ff,
+    #6a6bff,
+    #e15cff,
+    #ff4d6d
+  );
+  animation: hue 1.2s linear infinite;
+}
+@keyframes hue {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+.serif {
+  --serif-c: #ffffff;
+  --serif-ink: #2a2333;
+  position: absolute;
+  z-index: 5;
+  left: 5%;
+  right: 5%;
+  bottom: 14%;
+  align-items: center;
+  gap: 10px;
+}
+.stage[data-state="serif"] .serif {
+  display: flex;
+}
+.serif img {
+  flex: none;
+  width: 88px;
+  height: 88px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 4px 0 #0008);
+  animation: hop 0.5s ease-in-out infinite alternate;
+}
+.bubble {
+  position: relative;
+  margin: 0;
+  padding: 12px 18px;
+  border: 3px solid #fff;
+  border-radius: 16px;
+  background: var(--serif-c);
+  color: var(--serif-ink);
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: clamp(1.05rem, 4.4vw, 1.75rem);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--serif-c) 60%, transparent);
+}
+.bubble:before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  margin-top: -9px;
+  border: 9px solid transparent;
+  border-right: 12px solid #fff;
+  border-left: 0;
+}
+.bubble.pop {
+  animation: stamp 0.4s ease-out;
+}
+.stage[data-serif="1"] .serif {
+  --serif-c: #2f7de1;
+  --serif-ink: #fff;
+}
+.stage[data-serif="2"] .serif {
+  --serif-c: #1fa35a;
+  --serif-ink: #fff;
+}
+.stage[data-serif="3"] .serif {
+  --serif-c: #d8262b;
+  --serif-ink: #fff;
+}
+.stage[data-serif="4"] .serif {
+  --serif-c: #f2b705;
+  --serif-ink: #4a1d00;
+}
+.swarm {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+}
+.stage[data-state="swarm"] .swarm {
+  display: block;
+}
+.swarm i {
+  position: absolute;
+  top: var(--y);
+  left: -15%;
+  font-style: normal;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: var(--size);
+  color: #ffe45c;
+  -webkit-text-stroke: 0.12em #b3001b;
+  paint-order: stroke fill;
+  animation: swarm 1.5s var(--delay) linear infinite;
+}
+.stage[data-state="swarm"] .screen {
+  background: radial-gradient(ellipse at 50% 50%, #6b3a12, #1d0d08 75%);
+}
+/* ---- SP reaches: each has its own scene behind the reels ---- */
+.sp {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.stage[data-state="strong-reach"][data-sp="senbon"] .sp-senbon,
+.stage[data-state="strong-reach"][data-sp="tobira"] .sp-tobira,
+.stage[data-state="strong-reach"][data-sp="sakura"] .sp-sakura {
+  display: block;
+}
+.stage[data-state="strong-reach"] .torii {
+  visibility: hidden;
+}
+.sp-senbon {
+  background: radial-gradient(ellipse at 50% 48%, #ffcf7a, #b3311d 30%, #2a0707 75%);
+}
+.sp-senbon i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 62%;
+  height: 74%;
+  border: 14px solid #e8452c;
+  border-bottom: 0;
+  border-top: 18px solid #1d0b08;
+  box-shadow: 0 -4px 0 #e8452c;
+  opacity: 0;
+  animation: tunnel 2.4s linear infinite;
+}
+.sp-senbon i:before {
+  content: "";
+  position: absolute;
+  top: 12%;
+  left: -16%;
+  right: -16%;
+  height: 10px;
+  background: #e8452c;
+}
+.sp-senbon i:nth-child(2) {
+  animation-delay: -0.4s;
+}
+.sp-senbon i:nth-child(3) {
+  animation-delay: -0.8s;
+}
+.sp-senbon i:nth-child(4) {
+  animation-delay: -1.2s;
+}
+.sp-senbon i:nth-child(5) {
+  animation-delay: -1.6s;
+}
+.sp-senbon i:nth-child(6) {
+  animation-delay: -2s;
+}
+.sp-tobira {
+  background: radial-gradient(ellipse at 50% 50%, #fffbe6, #ffd36a 30%, #6b3c00 80%);
+}
+.sp-tobira i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  display: grid;
+  place-items: end center;
+  padding-bottom: 7%;
+  background:
+    repeating-linear-gradient(90deg, #0000 0 26px, #0003 26px 29px),
+    linear-gradient(#b0261c, #6e0f0b);
+  box-shadow: inset 0 0 0 6px #e0b04d;
+  font-style: normal;
+  animation: var(--ms, 5s) ease-in-out forwards;
+}
+.sp-tobira i:after {
+  display: grid;
+  place-items: center;
+  width: 74px;
+  height: 74px;
+  border: 4px solid #f6d58a;
+  border-radius: 50%;
+  background: #6e0f0b;
+  color: #f6d58a;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 2.2rem;
+}
+.sp-tobira i:first-child {
+  left: 0;
+  animation-name: door-left;
+}
+.sp-tobira i:first-child:after {
+  content: "開";
+}
+.sp-tobira i:last-child {
+  right: 0;
+  animation-name: door-right;
+}
+.sp-tobira i:last-child:after {
+  content: "運";
+}
+.sp-sakura {
+  background: linear-gradient(170deg, #ffb7c9, #d2537e 45%, #3d0c22);
+}
+.sp-sakura i {
+  position: absolute;
+  top: -8%;
+  left: var(--x);
+  width: 12px;
+  height: 16px;
+  border-radius: 70% 0 70% 0;
+  background: #ffe1ea;
+  box-shadow: 0 0 6px #fff8;
+  animation: sakura 2.2s var(--delay) linear infinite;
+}
+.sp-sakura i:nth-child(3n) {
+  background: #ff9fbc;
+  width: 9px;
+  height: 12px;
+}
+.stage[data-state="develop"] .screen,
+.stage[data-state="chance"] .screen,
+.stage[data-state="promote"] .screen,
+.stage[data-state="kokuchi"] .screen,
+.stage[data-state="pushed"] .screen {
+  animation: flash 0.7s ease-out;
+}
+.stage[data-state="develop"] .reels {
+  animation: develop 1.5s ease-in-out;
+}
+.stage[data-state="develop"] .lamps:before {
+  animation-duration: 0.6s;
+}
+/* ---- Script states: miss, settle, promotion, premium ---- */
+.stage[data-state="chance"] .lamps:before {
+  animation-duration: 0.8s;
+}
+/* 図柄昇格: the lined-up reels pulse while the chance is on. */
+.stage[data-state="promote-chance"] .reel {
+  animation: reach-glow 0.35s ease-in-out infinite alternate;
+  box-shadow:
+    0 0 0 2px var(--energy),
+    0 0 22px var(--energy);
+}
+.stage[data-state="promote-chance"] .screen {
+  background: radial-gradient(ellipse at 50% 45%, #5c3d0a, #120a05 75%);
+}
+.stage[data-state="promote-fail"] .reels {
+  filter: saturate(0.6) brightness(0.85);
+}
+.stage[data-state="promote-chance"] .reels:after,
+.stage[data-state="promote"] .reels:after,
+.stage[data-state="promote-fail"] .reels:after,
+.stage[data-state="settle"] .reels:after {
+  opacity: 1;
+  background: color-mix(in srgb, var(--energy) 14%, transparent);
+}
+.stage[data-state="promote"] .lamps:before,
+.stage[data-state="zenkaiten"] .lamps:before,
+.stage[data-state="kokuchi"] .lamps:before {
+  background: repeating-conic-gradient(
+    #ff4d6d 0 2deg,
+    transparent 2deg 4deg,
+    #ffd23f 4deg 6deg,
+    transparent 6deg 8deg,
+    #4dd2ff 8deg 10deg,
+    transparent 10deg 12deg
+  );
+  animation-duration: 1s;
+}
+.stage[data-state="kokuchi"] .screen {
+  background: radial-gradient(ellipse at 50% 50%, #fff6d0, #ffb800 35%, #5a2a00 85%);
+}
+/* ぷちゅん: the machine looks like it lost power, no fade. */
+.stage[data-state="puchun"],
+.stage[data-state="puchun"] * {
+  transition: none !important;
+}
+.stage[data-state="puchun"] {
+  box-shadow:
+    inset 0 0 0 2px #3a2c1a,
+    inset 0 0 0 5px #0a0608,
+    0 30px 70px #000a;
+}
+.stage[data-state="puchun"] .screen {
+  background: #000;
+  box-shadow: inset 0 0 0 2px #2a2014;
+}
+.stage[data-state="puchun"] .screen > *:not(.crt),
+.stage[data-state="puchun"] .lamps,
+.stage[data-state="puchun"] .result,
+.stage[data-state="reboot"] .screen > *:not(.boot),
+.stage[data-state="reboot"] .lamps,
+.stage[data-state="reboot"] .result {
+  visibility: hidden;
+}
+.stage[data-state="reboot"] {
+  box-shadow:
+    inset 0 0 0 2px #3a2c1a,
+    inset 0 0 0 5px #0a0608,
+    0 30px 70px #000a;
+}
+/* Freeze: the show stops on the frame it was showing, lamps die, nothing moves. */
+.stage[data-frozen],
+.stage[data-frozen] *,
+.stage[data-frozen] *:before,
+.stage[data-frozen] *:after {
+  animation-play-state: paused !important;
+  transition: none !important;
+}
+.stage[data-frozen] {
+  box-shadow:
+    inset 0 0 0 2px #6e5130,
+    inset 0 0 0 5px #1a0e12,
+    0 30px 70px #000a;
+}
+.stage[data-frozen] .lamps {
+  opacity: 0.15;
+}
+/* ぷちゅん: one white frame, then the picture collapses to a line and a dot like a CRT. */
+.crt,
+.boot {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: none;
+  background: #000;
+  pointer-events: none;
+}
+.stage[data-state="puchun"] .crt {
+  display: block;
+  animation: crt-flash 0.1s steps(1);
+}
+.crt:before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 3px;
+  margin-top: -1.5px;
+  background: #fff;
+  box-shadow:
+    0 0 18px #fff,
+    0 0 42px #9cf;
+  opacity: 0;
+}
+.stage[data-state="puchun"] .crt:before {
+  animation: crt-line 0.6s ease-in 0.08s forwards;
+}
+/* Fake reboot screen before the full rotation. */
+.boot {
+  padding: 16% 9%;
+  color: #d8e6ff;
+  font:
+    0.85rem/2 ui-monospace,
+    Consolas,
+    monospace;
+  text-align: left;
+}
+.stage[data-state="reboot"] .boot {
+  display: block;
+}
+.boot p {
+  margin: 0;
+  opacity: 0;
+  animation: boot-line 0.01s steps(1) forwards;
+}
+.boot p:nth-child(1) {
+  animation-delay: 0.3s;
+}
+.boot p:nth-child(2) {
+  animation-delay: 0.9s;
+}
+.boot p:nth-child(3) {
+  animation-delay: 1.5s;
+}
+.boot p:nth-child(4) {
+  animation-delay: 2s;
+}
+.boot-dots:after {
+  content: "...";
+  animation: blink 0.5s steps(2) infinite;
+}
+.boot-bar {
+  position: relative;
+  display: block;
+  height: 6px;
+  margin-top: 16px;
+  overflow: hidden;
+  background: #1b2a44;
+}
+.boot-bar:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #4dd2ff, #fff);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: boot-fill calc(var(--ms, 3s) * 0.8) linear 0.3s forwards;
+}
+@keyframes crt-flash {
+  from {
+    background: #fff;
+  }
+}
+@keyframes crt-line {
+  0% {
+    opacity: 1;
+    transform: scaleY(70);
+  }
+  35% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  75% {
+    opacity: 1;
+    transform: scaleX(0.02);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+}
+@keyframes boot-line {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes boot-fill {
+  to {
+    transform: scaleX(1);
+  }
+}
+/* 図柄昇格のドキドキ: the lined-up symbols tremble on the payline. */
+.reel[data-mode="jitter"] .strip {
+  animation: jitter 0.11s linear infinite;
+}
+.reel[data-mode="jitter"] {
+  box-shadow:
+    0 0 0 2px #fff6c2,
+    0 0 30px var(--energy);
+}
+@keyframes jitter {
+  0%,
+  100% {
+    transform: translateY(calc(var(--cell) * (-4.75 - var(--pos))));
+    filter: brightness(1);
+  }
+  25% {
+    transform: translateY(calc(var(--cell) * (-4.68 - var(--pos))));
+    filter: brightness(1.6);
+  }
+  75% {
+    transform: translateY(calc(var(--cell) * (-4.82 - var(--pos))));
+  }
+}
+.stage[data-state="promote-roll"] .screen {
+  background: radial-gradient(ellipse at 50% 45%, #7a4a0a, #140a04 75%);
+}
+.stage[data-state="promote-roll"] .lamps:before {
+  animation:
+    radiate 0.6s linear infinite,
+    blink 0.12s steps(2) infinite;
+}
+.stage[data-state="promote-roll"] .reels:after {
+  opacity: 1;
+  background: color-mix(in srgb, var(--energy) 22%, transparent);
+}
+.stage[data-state="zenkaiten"] .screen {
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    #5a1630,
+    #1f2a63,
+    #14503f,
+    #5c4a12,
+    #5a1630
+  );
+}
+.reel[data-mode="zen"] .strip {
+  animation: reel-spin 1.4s linear infinite;
+}
+/* Every cell reads 大吉 while all three roll together. */
+.reel[data-mode="zen"] .strip span {
+  --fill: #ffe45c;
+  --c: #d0101f;
+  --d: #520207;
+  font-size: 0;
+}
+.reel[data-mode="zen"] .strip span:after {
+  content: "大吉";
+  font-size: calc(var(--cell) * 0.5);
+}
+.reel[data-mode="zen"] {
+  box-shadow:
+    0 0 0 2px #fff6c2,
+    0 0 26px #ffd54a;
+  animation: reach-glow 0.4s ease-in-out infinite alternate;
+}
+/* ハズレ: dull and quiet, no payline. */
+.stage[data-state="miss"] {
+  --energy: #9aa0b4;
+}
+.stage[data-state="miss"] .screen {
+  background: radial-gradient(ellipse at 50% 30%, #23212e, #0b0a10 75%);
+}
+.stage[data-state="miss"] .reels {
+  filter: saturate(0.35) brightness(0.8);
+}
+.stage[data-state="miss"] .lamps:before {
+  opacity: 0.25;
+  animation-duration: 30s;
+}
+.stage[data-state="miss"] .rays,
+.stage[data-state="miss"] .particles {
+  opacity: 0;
+}
+/* ---- Final battle: PUSH button ---- */
+.push {
+  position: absolute;
+  z-index: 7;
+  left: 0;
+  right: 0;
+  bottom: 18px;
+  width: 112px;
+  height: 112px;
+  margin: auto;
+  border: 5px solid #ffe08a;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 30%, #ff9c80, #e01f1f 45%, #7a0a0a);
+  color: #fff;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.04em;
+  text-shadow: 0 3px 0 #5a0505;
+  box-shadow:
+    0 8px 0 #5a0b0e,
+    0 0 0 8px #0006,
+    0 0 40px #ff4b3a;
+  cursor: pointer;
+  animation: push-beat 0.5s ease-in-out infinite alternate;
+}
+.stage[data-state="push"] .push {
+  display: block;
+}
+.stage[data-state="push"] .hold,
+.stage[data-state="push"] .effect-caption {
+  visibility: hidden;
+}
+.stage[data-state="push"] .screen {
+  background: radial-gradient(ellipse at 50% 80%, #6b0f14, #13050a 70%);
+}
+.stage[data-state="push"] .lamps:before {
+  animation:
+    radiate 1s linear infinite,
+    blink 0.3s steps(2) infinite;
+}
+.push:active {
+  transform: translateY(6px);
+  box-shadow:
+    0 2px 0 #5a0b0e,
+    0 0 0 8px #0006,
+    0 0 40px #ff4b3a;
+}
+@keyframes stamp {
+  from {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.95);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes hop {
+  to {
+    transform: translateY(-8px);
+  }
+}
+@keyframes swarm {
+  to {
+    left: 115%;
+  }
+}
+@keyframes tunnel {
+  from {
+    transform: translate(-50%, -48%) scale(0.12);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  to {
+    transform: translate(-50%, -48%) scale(2.6);
+    opacity: 0.9;
+  }
+}
+@keyframes door-left {
+  from {
+    transform: translateX(-100%);
+  }
+  14%,
+  80% {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+@keyframes door-right {
+  from {
+    transform: translateX(100%);
+  }
+  14%,
+  80% {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes sakura {
+  to {
+    transform: translate(-140px, 520px) rotate(calc(var(--rotation) + 540deg));
+  }
+}
+@keyframes flash {
+  from {
+    filter: brightness(3);
+  }
+  to {
+    filter: brightness(1);
+  }
+}
+@keyframes develop {
+  30% {
+    transform: scale(0.88);
+  }
+  60% {
+    transform: scale(1.06);
+  }
+}
+@keyframes push-beat {
+  to {
+    transform: scale(1.08);
+  }
+}
+@keyframes card-in {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+@keyframes reel-spin {
+  from {
+    transform: translateY(calc(var(--cell) * -9.75));
+  }
+  to {
+    transform: translateY(calc(var(--cell) * -4.75));
+  }
+}
+@keyframes reel-land {
+  from {
+    transform: translateY(calc(var(--cell) * (-5.3 - var(--pos))));
+  }
+  65% {
+    transform: translateY(calc(var(--cell) * (-4.6 - var(--pos))));
+  }
+  to {
+    transform: translateY(calc(var(--cell) * (-4.75 - var(--pos))));
+  }
+}
+@keyframes reach-glow {
+  to {
+    box-shadow:
+      0 0 0 3px var(--energy),
+      0 0 40px var(--energy);
+  }
+}
+@keyframes hold-pop {
+  0% {
+    transform: scale(0.4);
+    filter: brightness(2.5);
+  }
+  60% {
+    transform: scale(1.35);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes cutin {
+  0% {
+    opacity: 0;
+    transform: scale(2.6);
+    filter: blur(8px);
+    background-color: #fff5;
+  }
+  16% {
+    opacity: 1;
+    transform: scale(0.92);
+    filter: blur(0);
+    background-color: transparent;
+  }
+  26% {
+    transform: scale(1);
+  }
+  78% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+@keyframes payline {
+  to {
+    background: color-mix(in srgb, var(--energy) 32%, transparent);
+  }
+}
+@keyframes beckon {
+  50% {
+    box-shadow:
+      inset 0 2px 0 #ffffff80,
+      inset 0 -8px 14px #0005,
+      0 6px 0 #5a0b0e,
+      0 0 34px #ff5a3caa;
+  }
+}
+@keyframes blink {
+  50% {
+    opacity: 0.25;
+  }
 }
 @keyframes float-up {
   0% {
@@ -613,17 +1850,6 @@ input {
     transform: rotate(360deg);
   }
 }
-@keyframes pulse {
-  to {
-    transform: scale(1.05) rotate(3deg);
-  }
-}
-@keyframes golden {
-  to {
-    transform: translateY(-4px) rotate(3deg);
-    box-shadow: 0 0 45px #ffd77b77;
-  }
-}
 @keyframes announce {
   from {
     transform: scale(0.65);
@@ -635,9 +1861,12 @@ input {
   }
 }
 @keyframes gate {
+  from {
+    opacity: 0.18;
+  }
   to {
-    transform: scale(1.5);
-    opacity: 0.25;
+    transform: scale(1.35);
+    opacity: 0.6;
   }
 }
 @keyframes shatter {
@@ -650,19 +1879,6 @@ input {
     opacity: 0;
   }
 }
-@keyframes celebrate {
-  from {
-    transform: scale(0.6);
-    opacity: 0.2;
-  }
-  70% {
-    transform: scale(1.08);
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
 @keyframes shake {
   25% {
     transform: translateX(3px);
@@ -673,6 +1889,8 @@ input {
 }
 /* Reduced motion disables flashing, shaking and continuous effects, not outcomes. */
 .stage.reduced *,
+.stage.reduced *:before,
+.stage.reduced *:after,
 .stage.reduced {
   animation: none !important;
   transition: none !important;
@@ -684,10 +1902,19 @@ input {
 .stage.reduced .rays {
   opacity: 0.12;
 }
-.stage.reduced[data-state="early"] {
+.stage.reduced .strip {
+  filter: none;
+}
+.stage.reduced .cutin {
+  opacity: 0;
+}
+.stage.reduced .boot p {
+  opacity: 1;
+}
+.stage.reduced[data-state="early"] .screen {
   box-shadow: inset 0 0 0 3px #b84646;
 }
-.stage.reduced[data-state="blackout"] .fortune-card {
+.stage.reduced[data-state="blackout"] .reels {
   opacity: 0.25;
 }
 @media (max-width: 600px) {
@@ -701,12 +1928,24 @@ input {
     padding: 26px 14px 40px;
   }
   .stage {
-    min-height: 415px;
-    border-radius: 120px 120px 10px 10px;
-    padding: 22px 12px;
+    padding: 13px;
+    border-radius: 40px 40px 16px 16px;
+  }
+  .lamps {
+    inset: 4px;
+    padding: 5px;
+    border-radius: 36px 36px 12px 12px;
+  }
+  .screen {
+    min-height: 370px;
+    padding: 18px 6px 16px;
+    border-radius: 30px 30px 10px 10px;
   }
   .stage-label {
     letter-spacing: 0.15em;
+  }
+  .reels {
+    padding: 6px;
   }
   .particles i:nth-child(n + 13) {
     display: none;
@@ -719,16 +1958,47 @@ input {
     font-size: 0.65rem;
   }
   .primary {
-    font-size: 1.1rem;
-  }
-  .effect-caption {
-    min-height: 1.6em;
+    font-size: 1.15rem;
   }
   .shrine-description {
     font-size: 0.85rem;
   }
   .torii {
-    inset-inline: 12%;
+    left: 8%;
+    right: 8%;
+  }
+  .stage-label {
+    font-size: 0.8rem;
+  }
+  .serif img {
+    width: 56px;
+    height: 56px;
+  }
+  .push {
+    width: 96px;
+    height: 96px;
+    font-size: 1.25rem;
+  }
+  .sp-tobira i:after {
+    width: 58px;
+    height: 58px;
+    font-size: 1.7rem;
+  }
+  .swarm i:nth-child(n + 11),
+  .sp-sakura i:nth-child(n + 17) {
+    display: none;
+  }
+  .shrine-info {
+    grid-template-columns: 1fr;
+  }
+  .shrine-photo {
+    min-height: 200px;
+  }
+  .shrine-photo:after {
+    background: linear-gradient(transparent 55%, #2a1d22);
+  }
+  .shrine-body {
+    padding: 20px 18px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -741,5 +2011,8 @@ input {
   .particles,
   .cracks {
     display: none;
+  }
+  .boot p {
+    opacity: 1;
   }
 }

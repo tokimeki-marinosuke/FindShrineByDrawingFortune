@@ -1,5 +1,17 @@
 const { chromium } = require("playwright");
 const assert = require("node:assert/strict");
+const { scenarios } = require("../js/omikuji-engine.js");
+// Math.random values that pick a fortune, a named script and the promotion layer
+// (third value: low = 図柄昇格 climb, 0.999 = no promotion).
+function script(index, name, promotion = 0.999) {
+  let start = 0;
+  for (const [entry, weight] of scenarios[index]) {
+    if (entry === name)
+      return [(index + 0.5) / 5, start + weight / 2, promotion];
+    start += weight;
+  }
+  throw new Error(name);
+}
 (async () => {
   const b = await chromium.launch({
     executablePath: "/usr/bin/chromium",
@@ -11,11 +23,10 @@ const assert = require("node:assert/strict");
       const errors = [];
       p.on("pageerror", (e) => errors.push(e.message));
       await p.route("https://**/*", (r) => r.abort());
-      await p.addInitScript(() => {
+      await p.addInitScript((values) => {
         let n = 0;
-        const values = [0.01, 0, 0, 0, 0.99, 0];
-        Math.random = () => values[n++] ?? 0.9;
-      });
+        Math.random = () => values[n++] ?? 0.5;
+      }, script(0, "revival"));
       await p.clock.install();
       await p.goto("http://127.0.0.1:8000/omikuji.html");
       assert.equal(
@@ -32,7 +43,7 @@ const assert = require("node:assert/strict");
       await p.locator("#draw-button").dispatchEvent("click");
       assert.equal(await p.locator("#draw-button").isDisabled(), true);
       const seen = [];
-      for (let n = 0; n < 180; n++) {
+      for (let n = 0; n < 600; n++) {
         await p.clock.runFor(100);
         const state = await p.locator(".stage").getAttribute("data-state");
         if (!seen.includes(state)) seen.push(state);
@@ -40,13 +51,13 @@ const assert = require("node:assert/strict");
       }
       for (const state of [
         "early",
-        "charge",
-        "repeat",
+        "stepup",
+        "reach",
         "strong-reach",
-        "hot",
         "provisional",
         "blackout",
         "revival",
+        "hold",
         "fever",
       ])
         assert.ok(seen.includes(state), state);
@@ -65,12 +76,12 @@ const assert = require("node:assert/strict");
         ),
         false,
       );
-      await p.clock.runFor(3400);
+      await p.clock.runFor(6200);
       await p.waitForURL("**/shrine/meiji.html?result=*");
       assert.match(await p.locator("#omikuji-result").innerText(), /大吉/);
       assert.deepEqual(errors, []);
       console.log(
-        "PASS full special flow, double click, navigation, layout",
+        "PASS revival flow, double click, navigation, layout",
         width,
         seen.join(","),
       );
@@ -80,25 +91,88 @@ const assert = require("node:assert/strict");
       const p = await b.newPage();
       await p.route("https://**/*", (r) => r.abort());
       await p.clock.install();
-      await p.addInitScript(() => {
+      await p.addInitScript((v) => {
         let n = 0;
-        const v = [0.85, 0.99, 0.99, 0];
         Math.random = () => v[n++] ?? 0.99;
-      });
+      }, script(4, "quick"));
       await p.goto("http://127.0.0.1:8000/omikuji.html");
       await p.locator("#draw-button").click();
       const seen = [];
-      for (let n = 0; n < 100; n++) {
+      for (let n = 0; n < 200; n++) {
         await p.clock.runFor(100);
         const s = await p.locator(".stage").getAttribute("data-state");
         if (!seen.includes(s)) seen.push(s);
         if (await p.locator(".shrine-info").isVisible()) break;
       }
-      assert.ok(seen.includes("reach"));
-      for (const s of ["early", "hot", "revival", "fever", "repeat"])
-        assert.ok(!seen.includes(s));
+      for (const s of ["reach", "hold", "revival", "fever", "repeat"])
+        assert.ok(!seen.includes(s), s);
+      assert.equal(await p.locator(".stage").getAttribute("data-state"), "miss");
       assert.match(await p.locator(".result").innerText(), /凶/);
-      console.log("PASS ordinary reach and result");
+      console.log("PASS quick miss for 凶");
+      await p.close();
+    }
+    {
+      const p = await b.newPage();
+      await p.route("https://**/*", (r) => r.abort());
+      await p.clock.install();
+      await p.addInitScript((v) => {
+        let n = 0;
+        Math.random = () => v[n++] ?? 0.5;
+      }, script(0, "puchun"));
+      await p.goto("http://127.0.0.1:8000/omikuji.html");
+      await p.locator("#draw-button").click();
+      const seen = [];
+      let froze = false;
+      for (let n = 0; n < 300; n++) {
+        await p.clock.runFor(100);
+        const s = await p.locator(".stage").getAttribute("data-state");
+        if (!seen.includes(s)) seen.push(s);
+        // The freeze keeps data-state as it was and only marks the stage.
+        froze ||= (await p.locator(".stage[data-frozen]").count()) > 0;
+        if (await p.locator(".shrine-info").isVisible()) break;
+      }
+      assert.ok(froze);
+      assert.deepEqual(seen.slice(0, 5), [
+        "spin",
+        "puchun",
+        "reboot",
+        "zenkaiten",
+        "fever",
+      ]);
+      assert.match(await p.locator(".result").innerText(), /大吉/);
+      console.log("PASS freeze, puchun and reboot into full rotation");
+      await p.close();
+    }
+    {
+      const p = await b.newPage();
+      await p.route("https://**/*", (r) => r.abort());
+      await p.clock.install();
+      await p.addInitScript((v) => {
+        let n = 0;
+        Math.random = () => v[n++] ?? 0.5;
+      }, script(0, "royal", 0.1));
+      await p.goto("http://127.0.0.1:8000/omikuji.html");
+      await p.locator("#draw-button").click();
+      const seen = [];
+      for (let n = 0; n < 500; n++) {
+        await p.clock.runFor(100);
+        const s = await p.locator(".stage").getAttribute("data-state");
+        if (!seen.includes(s)) seen.push(s);
+        // Press PUSH as soon as the promotion chance offers it.
+        if (s === "push") await p.locator(".push").click();
+        if (await p.locator(".shrine-info").isVisible()) break;
+      }
+      for (const s of [
+        "settle",
+        "promote-chance",
+        "pushed",
+        "promote-roll",
+        "promote",
+        "fever",
+      ])
+        assert.ok(seen.includes(s), s);
+      assert.match(await p.locator(".result").innerText(), /大吉/);
+      console.log("PASS symbol promotion with PUSH", seen.join(","));
       await p.close();
     }
     for (let i = 0; i < 5; i++) {
@@ -119,7 +193,7 @@ const assert = require("node:assert/strict");
         await p.locator(".result").innerText(),
         new RegExp(["大吉", "中吉", "吉", "末吉", "凶"][i]),
       );
-      await p.clock.runFor(3400);
+      await p.clock.runFor(6200);
       await p.waitForURL(
         "**/shrine/" +
           ["meiji", "fushimi", "sumiyoshi", "kawagoe", "washi"][i] +
