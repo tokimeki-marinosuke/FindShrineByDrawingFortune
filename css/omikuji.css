@@ -2081,6 +2081,29 @@ input {
     transform: scale(0.94);
   }
 }
+/* ---- ため: the moment before an outcome plays in slow motion (see slowMotion in index.js) ---- */
+.stage[data-decide] .screen {
+  box-shadow:
+    inset 0 0 0 2px #d9b46a,
+    inset 0 0 0 4px #0b0810,
+    inset 0 0 140px 50px #000e;
+}
+.stage[data-decide] .lamps {
+  opacity: 0.45;
+}
+/* A slow push-in on the reels over the whole beat. */
+.stage[data-decide] .reels {
+  transform: scale(1.06);
+  transition-duration: var(--ms, 1.5s);
+  transition-timing-function: ease-in;
+}
+.stage[data-decide][data-stars] .reels {
+  transform: scale(0.6);
+}
+.stage[data-decide] .effect-caption {
+  font-size: clamp(1.6rem, 6vw, 2.6rem);
+  letter-spacing: 0.3em;
+}
 /* ---- Final battle: PUSH button ---- */
 .push {
   position: absolute;

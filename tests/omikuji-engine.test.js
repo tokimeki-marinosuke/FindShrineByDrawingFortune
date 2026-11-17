@@ -145,6 +145,19 @@ test("every scenario keeps its promises: hits line up, 凶 misses, rainbow only 
               !draw.steps.some((s) => s.state === "push" && s.press === "決"),
               label,
             );
+          // Every outcome is preceded by a slow-motion ため, and only reaches have one.
+          // (A revival's fake miss may follow straight on from a lost SP mission.)
+          states.forEach((s, n) => {
+            if (["sp-result", "promote", "promote-fail"].includes(s))
+              assert.equal(states[n - 1], "decide", `${label} before ${s}`);
+            if (s === "provisional")
+              assert.ok(
+                ["decide", "sp-result"].includes(states[n - 1]),
+                `${label} before ${s}`,
+              );
+          });
+          assert.equal(states.includes("decide"), states.includes("reach"), label);
+          assert.notEqual(states.at(-1) === "fever" ? states.at(-2) : states.at(-1), "reach", label);
           // Notices bow out: the last STEP panel, セリフ and 福群 all carry an outro
           // (except a STEP 1 that a freeze cuts off on purpose).
           draw.steps.forEach((s, n) => {
@@ -155,7 +168,7 @@ test("every scenario keeps its promises: hits line up, 凶 misses, rainbow only 
               assert.equal(s.outro, true, label);
           });
           const total = draw.steps.reduce((sum, s) => sum + s.ms, 0);
-          assert.ok(total >= 2000 && total <= 65000, `${label} ${total}`);
+          assert.ok(total >= 2000 && total <= 70000, `${label} ${total}`);
         }
 });
 test("premium and quick paths look the way they are named", () => {
@@ -235,7 +248,8 @@ test("SP reaches state a mission and a 期待度 that the outcome honours", () =
       .filter((phase, n, all) => phase !== all[n - 1]);
     assert.deepEqual(phases, ["intro", "tease", "brink", "result"]);
     assert.equal(states[start + 1], "sp-tease");
-    assert.equal(states[end - 1] === "sp-brink" || states[end - 1] === "push", true);
+    assert.equal(states[end - 1], "decide");
+    assert.ok(["sp-brink", "push"].includes(states[end - 2]));
     for (const step of d.steps.slice(start, end + 1))
       if (step.state === "push") assert.equal(step.spPhase, "brink");
     // The mission is won exactly when the draw hits, except right before a revival.

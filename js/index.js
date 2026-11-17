@@ -142,6 +142,12 @@
   function fortuneIndex() {
     return engine.omikuji.indexOf(current.fortune);
   }
+  // ため: everything on the screen keeps moving, just at a fraction of the speed.
+  function slowMotion(on) {
+    if (typeof stage.getAnimations !== "function") return;
+    for (const animation of stage.getAnimations({ subtree: true }))
+      animation.playbackRate = on ? 0.25 : 1;
+  }
   function showCutin(text) {
     cutin.textContent = text;
     restart(cutin, "show");
@@ -190,7 +196,9 @@
     if (!running || finished) return;
     finished = true;
     clearTimers();
+    slowMotion(false);
     delete stage.dataset.frozen;
+    delete stage.dataset.decide;
     delete stage.dataset.stars;
     delete stage.dataset.spResult;
     delete stage.dataset.spPhase;
@@ -237,12 +245,13 @@
       return;
     }
     const step = current.steps[index];
-    // A freeze must not change data-state, or state-specific visuals would vanish.
+    slowMotion(false);
+    // A freeze or a ため must not change data-state, or state-specific visuals would vanish.
+    delete stage.dataset.frozen;
+    delete stage.dataset.decide;
     if (step.state === "freeze") stage.dataset.frozen = "";
-    else {
-      delete stage.dataset.frozen;
-      stage.dataset.state = step.state;
-    }
+    else if (step.state === "decide") stage.dataset.decide = "";
+    else stage.dataset.state = step.state;
     stage.style.setProperty("--ms", step.ms + "ms");
     if (step.tier !== undefined) stage.dataset.tier = step.tier;
     stage.dataset.repeat = step.repeat || 0;
@@ -316,6 +325,10 @@
         break;
       case "settle":
         setReel(1, "stop", step.symbol);
+        break;
+      case "decide":
+        // Wait for the reels of this moment to take their state, then slow it all down.
+        later(() => slowMotion(!reduced()), 0);
         break;
       case "promote-roll":
         // The lined-up symbols tremble while the promotion hangs in the balance.

@@ -333,10 +333,13 @@
       spPhase = "brink";
       add("sp-brink", "運命の分かれ目", spReaches[spVariant].brink, 2600);
     }
+    // ため: a slow-motion beat right before any outcome is shown.
+    const decide = (ms = 1500) => add("decide", null, "……", ms);
     // Settles the SP mission; a hit wins it, a miss (or a revival-to-be) loses it.
     function spOutcome(win) {
       if (!spVariant) return;
       spBrink();
+      decide();
       const sp = spReaches[spVariant];
       spPhase = "result";
       add(
@@ -380,6 +383,7 @@
         );
         add("push", "図柄昇格チャンス", "PUSHで昇格！", 3000, { press: "昇" });
         add("promote-roll", "図柄昇格チャンス", "……！", 2200);
+        decide(1300);
         if (next === at)
           add("promote-fail", "昇格ならず", omikuji[at] + "で決着", 2000);
         else
@@ -483,6 +487,8 @@
         if (promotion === "none" && chance(0.6)) notice(heat * 0.7);
         reach(line, 3200);
         if (chance(0.6)) spReach();
+        // The fake miss is an outcome too: hold the beat even without an SP.
+        if (!spVariant) decide();
         spOutcome(false);
         add("provisional", "……", "ハズレ……？", 2000, { symbol: beside(line) });
         add("blackout", "……", "まだ終わらない……", 2000);
@@ -520,7 +526,10 @@
         tier = 5;
         break;
     }
-    spOutcome(hit);
+    // A reach always ends on a ため; after an SP it comes with the mission's result.
+    if (spVariant) spOutcome(hit);
+    else if (scenario !== "revival" && steps.some((s) => s.state === "reach"))
+      decide();
     if (promotion === "climb") promote(line, index);
     else if (promotion === "fail") promote(index, index);
     if (fortune === "大吉")
