@@ -104,9 +104,9 @@
       ["kecchi", 0.13],
     ]),
     Object.freeze([
-      ["quick", 0.45],
-      ["reach-miss", 0.3],
-      ["sp-miss", 0.17],
+      ["quick", 0.4],
+      ["reach-miss", 0.25],
+      ["sp-miss", 0.27],
       ["pseudo-miss", 0.08],
     ]),
   ]);
@@ -138,11 +138,45 @@
     "神様が微笑んでおる…！",
   ];
   const holdNames = ["白", "青", "緑", "赤", "金", "虹"];
+  // Each SP reach states its mission up front; the mission's outcome is the reach's outcome.
   const spReaches = {
-    senbon: { label: "千本鳥居リーチ", text: "千本鳥居を駆け抜けろ", cutin: "千本鳥居" },
-    tobira: { label: "天の扉リーチ", text: "天の扉、開くか", cutin: "天の扉" },
-    sakura: { label: "桜吹雪リーチ", text: "桜吹雪の奇跡", cutin: "桜吹雪" },
+    senbon: {
+      label: "千本鳥居リーチ",
+      mission: "千本鳥居を最後まで駆け抜けろ！",
+      cutin: "千本鳥居",
+      tease: "鳥居の先に、光が……",
+      brink: "出口の光が、目の前に……！",
+      win: ["突破", "出口の光を抜けた！"],
+      lose: "鳥居の途中で力尽きた……",
+    },
+    tobira: {
+      label: "天の扉リーチ",
+      mission: "天の扉をこじ開けろ！",
+      cutin: "天の扉",
+      tease: "扉がきしんでいる……",
+      brink: "扉が……少しだけ……！",
+      win: ["開門", "天の扉、開門！"],
+      lose: "扉は固く閉ざされた……",
+    },
+    sakura: {
+      label: "桜吹雪リーチ",
+      mission: "桜を満開に咲かせろ！",
+      cutin: "桜吹雪",
+      tease: "つぼみが色づいてきた……",
+      brink: "つぼみが……ほころぶ……！",
+      win: ["満開", "桜、満開！"],
+      lose: "花は散ってしまった……",
+    },
   };
+  // 期待度★ shown at the start of an SP reach, per fortune: chances of ★1〜★5.
+  // ★5 never appears on 凶, so it is a sure hit; ★1 is almost always a miss.
+  const starOdds = [
+    [0, 0, 0.1, 0.3, 0.6],
+    [0, 0.05, 0.3, 0.45, 0.2],
+    [0, 0.1, 0.4, 0.4, 0.1],
+    [0.05, 0.25, 0.45, 0.25, 0],
+    [0.3, 0.3, 0.28, 0.12, 0],
+  ];
   // How hot notices may get, per fortune.
   const heats = [0.9, 0.7, 0.5, 0.35, 0.25];
   function createDraw(settings = defaults, random = Math.random) {
@@ -173,8 +207,18 @@
     const between = (low, high) =>
       low + Math.floor(random() * (high - low + 1));
     const steps = [];
+    // While an SP reach runs, every step carries its current 期待度★.
+    let stars = 0;
+    let spPhase = null;
     const add = (state, label, text, ms, extra) =>
-      steps.push({ state, label, text, ms, ...extra });
+      steps.push({
+        state,
+        label,
+        text,
+        ms,
+        ...(stars ? { stars, spPhase } : {}),
+        ...extra,
+      });
     let early = false;
     let tier = 0;
     // A neighbouring symbol: what the center reel shows when a reach misses.
@@ -185,7 +229,7 @@
       add("spin", "変動開始", "運命が、動き出す", ms);
       if (chance(earlyRate)) {
         early = true;
-        add("early", "先バレ", "開運接近", 1700, { cutin: "先バレ" });
+        add("early", "先バレ", "開運接近", 2000, { cutin: "先バレ" });
       }
     }
     function hold(next, late) {
@@ -195,7 +239,7 @@
         "hold",
         late ? "当該保留変化" : "保留変化",
         next === 5 ? "虹保留・確定！" : holdNames[next] + "保留",
-        next >= 4 ? 1700 : 1100,
+        next >= 4 ? 2000 : 1500,
         { tier: next, cutin: next === 5 ? "確定" : null },
       );
     }
@@ -223,7 +267,10 @@
       const kind = random();
       if (kind < 0.45) {
         const color = level(warmth);
-        add("serif", "セリフ予告", serifLines[color], 2400, { color });
+        add("serif", "セリフ予告", serifLines[color], 3000, {
+          color,
+          outro: true,
+        });
       } else if (kind < 0.8 || warmth < 0.6) {
         const top = 1 + level(warmth);
         for (let n = 1; n <= top; n++)
@@ -231,21 +278,25 @@
             "stepup",
             "ステップアップ予告",
             n === 5 ? "STEP 5・最終段階" : "STEP " + n,
-            n === top ? 1400 : 750,
-            { step: n },
+            n === top ? 2000 : 1100,
+            // Only the final panel bows out; the earlier ones hand over to the next STEP.
+            { step: n, ...(n === top ? { outro: true } : {}) },
           );
       } else {
-        add("swarm", "福群予告", "福が押し寄せる！", 2400, { cutin: "福群" });
+        add("swarm", "福群予告", "福が押し寄せる！", 3600, {
+          cutin: "福群",
+          outro: true,
+        });
       }
     }
     function pseudo(count) {
       for (let n = 1; n <= count; n++) {
-        add("pause", "擬似連続予告", "……", 600);
+        add("pause", "擬似連続予告", "……", 800);
         add(
           "repeat",
           "擬似連続予告",
           n === 3 ? "三連・神域突入" : "継続 × " + n,
-          1500,
+          1900,
           { repeat: n, cutin: "擬似 " + (n + 1) },
         );
       }
@@ -256,20 +307,61 @@
         cutin: "リーチ",
       });
     }
+    let spVariant = null;
     function spReach() {
       const variant = ["senbon", "tobira", "sakura"][between(0, 2)];
       const sp = spReaches[variant];
-      add("develop", "SPリーチ発展", "発展！", 1500, { cutin: "発展" });
-      add("strong-reach", sp.label, sp.text, 5600, {
+      add("develop", "SPリーチ発展", "発展！", 2000, { cutin: "発展" });
+      const odds = starOdds[index];
+      const r = random();
+      let sum = 0;
+      const picked = odds.findIndex((odd) => r < (sum += odd));
+      // Rounding can leave r just past the total: fall back to the top possible ★.
+      stars = 1 + (picked >= 0 ? picked : odds.findLastIndex((odd) => odd > 0));
+      spVariant = variant;
+      spPhase = "intro";
+      add("strong-reach", sp.label, sp.mission, 4800, {
         variant,
         cutin: sp.cutin,
       });
+      spPhase = "tease";
+      add("sp-tease", sp.label, sp.tease, 3400);
     }
-    const hot = () =>
+    // The moment before the outcome: the door opens a crack, the light is right there.
+    function spBrink() {
+      if (spPhase !== "tease") return;
+      spPhase = "brink";
+      add("sp-brink", "運命の分かれ目", spReaches[spVariant].brink, 2600);
+    }
+    // ため: a slow-motion beat right before any outcome is shown.
+    const decide = (ms = 1500) => add("decide", null, "……", ms);
+    // Settles the SP mission; a hit wins it, a miss (or a revival-to-be) loses it.
+    function spOutcome(win) {
+      if (!spVariant) return;
+      spBrink();
+      decide();
+      const sp = spReaches[spVariant];
+      spPhase = "result";
+      add(
+        "sp-result",
+        win ? "ミッション成功" : "ミッション失敗",
+        win ? sp.win[1] : sp.lose,
+        2400,
+        { success: win, cutin: win ? sp.win[0] : null },
+      );
+      stars = 0;
+      spPhase = null;
+      spVariant = null;
+    }
+    // 激熱 during an SP raises the 期待度 by one; ★5 stays reserved for hits.
+    const hot = () => {
+      if (stars) stars = Math.min(stars + 1, hit ? 5 : 4);
       add("hot", "チャンスアップ", "神託発動・激熱", 2200, { cutin: "激熱" });
+    };
     const push = () => {
-      if (promotion === "none")
-        add("push", "最終決戦", "ボタンを押せ！", 3200, { press: "決" });
+      if (promotion !== "none") return;
+      spBrink();
+      add("push", "最終決戦", "ボタンを押せ！", 3200, { press: "決" });
     };
     // 図柄昇格: line up on a lower fortune, then climb one PUSH chance at a time.
     // With from === to the single chance fails, so a chance is never a sure thing.
@@ -286,11 +378,12 @@
           "promote-chance",
           "図柄昇格チャンス",
           omikuji[at] + "から昇格なるか！？",
-          1500,
+          1800,
           { cutin: "昇格？" },
         );
         add("push", "図柄昇格チャンス", "PUSHで昇格！", 3000, { press: "昇" });
-        add("promote-roll", "図柄昇格チャンス", "……！", 1800);
+        add("promote-roll", "図柄昇格チャンス", "……！", 2200);
+        decide(1300);
         if (next === at)
           add("promote-fail", "昇格ならず", omikuji[at] + "で決着", 2000);
         else
@@ -390,9 +483,13 @@
       case "revival":
         opening();
         earlyHold();
-        if (chance(0.6)) notice(heat * 0.7);
+        // Revival plus a promotion is long enough without a notice up front.
+        if (promotion === "none" && chance(0.6)) notice(heat * 0.7);
         reach(line, 3200);
         if (chance(0.6)) spReach();
+        // The fake miss is an outcome too: hold the beat even without an SP.
+        if (!spVariant) decide();
+        spOutcome(false);
         add("provisional", "……", "ハズレ……？", 2000, { symbol: beside(line) });
         add("blackout", "……", "まだ終わらない……", 2000);
         add("revival", "復活", "運命開花", 2000, { cutin: "復活" });
@@ -429,6 +526,10 @@
         tier = 5;
         break;
     }
+    // A reach always ends on a ため; after an SP it comes with the mission's result.
+    if (spVariant) spOutcome(hit);
+    else if (scenario !== "revival" && steps.some((s) => s.state === "reach"))
+      decide();
     if (promotion === "climb") promote(line, index);
     else if (promotion === "fail") promote(index, index);
     if (fortune === "大吉")
@@ -454,6 +555,7 @@
     omikuji: Object.freeze(omikuji),
     scenarios,
     promotions,
+    starOdds,
     defaults,
     normalizeSettings,
     createDraw,

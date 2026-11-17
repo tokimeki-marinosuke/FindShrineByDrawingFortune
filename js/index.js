@@ -15,6 +15,9 @@
   const stepupNumber = document.querySelector(".stepup-n");
   const bubble = document.querySelector(".bubble");
   const pushButton = document.querySelector(".push");
+  const mission = document.querySelector(".mission");
+  const starsBadge = document.querySelector(".stars");
+  const starLine = (count) => "★".repeat(count) + "☆".repeat(5 - count);
   const reels = [...document.querySelectorAll(".reel")];
   const info = document.querySelector(".shrine-info");
   const countdown = document.querySelector(".countdown");
@@ -87,7 +90,8 @@
     const charm = document.createElement("i");
     charm.textContent = i % 3 ? "福" : "⛩";
     charm.style.setProperty("--y", ((i * 29) % 90) + 3 + "%");
-    charm.style.setProperty("--delay", ((i * 0.13) % 1.6).toFixed(2) + "s");
+    // Launch order across the notice (0〜1); CSS spreads it over the step's length.
+    charm.style.setProperty("--k", ((i * 7) % 16) / 15);
     charm.style.setProperty("--size", 1 + (i % 4) * 0.35 + "rem");
     return charm;
   });
@@ -138,6 +142,12 @@
   function fortuneIndex() {
     return engine.omikuji.indexOf(current.fortune);
   }
+  // ため: everything on the screen keeps moving, just at a fraction of the speed.
+  function slowMotion(on) {
+    if (typeof stage.getAnimations !== "function") return;
+    for (const animation of stage.getAnimations({ subtree: true }))
+      animation.playbackRate = on ? 0.25 : 1;
+  }
   function showCutin(text) {
     cutin.textContent = text;
     restart(cutin, "show");
@@ -186,7 +196,13 @@
     if (!running || finished) return;
     finished = true;
     clearTimers();
+    slowMotion(false);
     delete stage.dataset.frozen;
+    delete stage.dataset.decide;
+    delete stage.dataset.stars;
+    delete stage.dataset.spResult;
+    delete stage.dataset.spPhase;
+    delete stage.dataset.outro;
     const fever = current.fortune === "大吉";
     stage.dataset.state = fever ? "fever" : current.hit ? "result" : "miss";
     stage.dataset.tier = current.tier;
@@ -229,12 +245,13 @@
       return;
     }
     const step = current.steps[index];
-    // A freeze must not change data-state, or state-specific visuals would vanish.
+    slowMotion(false);
+    // A freeze or a ため must not change data-state, or state-specific visuals would vanish.
+    delete stage.dataset.frozen;
+    delete stage.dataset.decide;
     if (step.state === "freeze") stage.dataset.frozen = "";
-    else {
-      delete stage.dataset.frozen;
-      stage.dataset.state = step.state;
-    }
+    else if (step.state === "decide") stage.dataset.decide = "";
+    else stage.dataset.state = step.state;
     stage.style.setProperty("--ms", step.ms + "ms");
     if (step.tier !== undefined) stage.dataset.tier = step.tier;
     stage.dataset.repeat = step.repeat || 0;
@@ -273,7 +290,7 @@
         spinAll();
         break;
       case "reach":
-        cutinDelay = reduced() ? 0 : Math.min(800, step.ms / 4);
+        cutinDelay = reduced() ? 0 : Math.min(1200, step.ms / 4);
         setReel(1, "spin");
         setReel(0, "stop", step.symbol);
         later(() => {
@@ -282,7 +299,18 @@
         }, cutinDelay);
         break;
       case "strong-reach":
-        cutinDelay = reduced() ? 0 : 400;
+        // Title cut-in first, then the mission card with its 期待度.
+        cutinDelay = reduced() ? 0 : step.ms * 0.07;
+        later(
+          () => {
+            mission.querySelector(".mission-text").textContent = step.text;
+            mission.querySelector(".mission-stars").textContent = starLine(
+              step.stars,
+            );
+            restart(mission, "show");
+          },
+          reduced() ? 0 : step.ms * 0.27,
+        );
         setReel(1, "slow-strong");
         break;
       case "push":
@@ -297,6 +325,10 @@
         break;
       case "settle":
         setReel(1, "stop", step.symbol);
+        break;
+      case "decide":
+        // Wait for the reels of this moment to take their state, then slow it all down.
+        later(() => slowMotion(!reduced()), 0);
         break;
       case "promote-roll":
         // The lined-up symbols tremble while the promotion hangs in the balance.
@@ -331,6 +363,23 @@
         break;
     }
     if (step.cutin) later(() => showCutin(step.cutin), cutinDelay);
+    // The 期待度 badge stays up for the whole SP reach and pops when it rises.
+    if (step.stars) {
+      if (step.stars > Number(stage.dataset.stars || 0) && stage.dataset.stars)
+        restart(starsBadge, "up");
+      stage.dataset.stars = step.stars;
+      stage.dataset.spPhase = step.spPhase;
+      starsBadge.querySelector("span").textContent = starLine(step.stars);
+    } else {
+      delete stage.dataset.stars;
+      delete stage.dataset.spPhase;
+    }
+    // Notices marked outro fade out at the end of their step instead of vanishing.
+    if (step.outro) stage.dataset.outro = "";
+    else delete stage.dataset.outro;
+    if (step.state === "sp-result")
+      stage.dataset.spResult = step.success ? "win" : "lose";
+    else delete stage.dataset.spResult;
     // Only meaningful milestones are announced, never the rapidly changing reels.
     if (
       [
@@ -341,6 +390,9 @@
         "strong-reach",
         "hot",
         "push",
+        "sp-tease",
+        "sp-brink",
+        "sp-result",
         "provisional",
         "blackout",
         "revival",
@@ -354,7 +406,11 @@
         "fever",
       ].includes(step.state)
     )
-      result.textContent = step.label + "：" + step.text;
+      result.textContent =
+        step.label +
+        "：" +
+        step.text +
+        (step.state === "strong-reach" ? `（期待度 ★${step.stars}）` : "");
     timer = setTimeout(() => play(index + 1), step.ms);
   }
   // Pressing PUSH only ends the wait early; the outcome was fixed at the start.

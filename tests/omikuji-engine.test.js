@@ -145,8 +145,30 @@ test("every scenario keeps its promises: hits line up, 凶 misses, rainbow only 
               !draw.steps.some((s) => s.state === "push" && s.press === "決"),
               label,
             );
+          // Every outcome is preceded by a slow-motion ため, and only reaches have one.
+          // (A revival's fake miss may follow straight on from a lost SP mission.)
+          states.forEach((s, n) => {
+            if (["sp-result", "promote", "promote-fail"].includes(s))
+              assert.equal(states[n - 1], "decide", `${label} before ${s}`);
+            if (s === "provisional")
+              assert.ok(
+                ["decide", "sp-result"].includes(states[n - 1]),
+                `${label} before ${s}`,
+              );
+          });
+          assert.equal(states.includes("decide"), states.includes("reach"), label);
+          assert.notEqual(states.at(-1) === "fever" ? states.at(-2) : states.at(-1), "reach", label);
+          // Notices bow out: the last STEP panel, セリフ and 福群 all carry an outro
+          // (except a STEP 1 that a freeze cuts off on purpose).
+          draw.steps.forEach((s, n) => {
+            const lastStep =
+              s.state === "stepup" &&
+              !["stepup", "freeze"].includes(draw.steps[n + 1]?.state);
+            if (["serif", "swarm"].includes(s.state) || lastStep)
+              assert.equal(s.outro, true, label);
+          });
           const total = draw.steps.reduce((sum, s) => sum + s.ms, 0);
-          assert.ok(total >= 2000 && total <= 50000, `${label} ${total}`);
+          assert.ok(total >= 2000 && total <= 70000, `${label} ${total}`);
         }
 });
 test("premium and quick paths look the way they are named", () => {
@@ -196,6 +218,49 @@ test("premium and quick paths look the way they are named", () => {
     sequence([0.7, scenarioValue(3, "normal"), promotionValue(3, "none")]),
   );
   assert.ok(!plain.steps.some((s) => ["repeat", "hold"].includes(s.state)));
+});
+test("SP reaches state a mission and a 期待度 that the outcome honours", () => {
+  const random = lcg(4321);
+  const byStars = [0, 0, 0, 0, 0].map(() => ({ hits: 0, total: 0 }));
+  for (let n = 0; n < 25000; n++) {
+    const d = createDraw({}, random);
+    const states = d.steps.map((s) => s.state);
+    const reaches = d.steps.filter((s) => s.state === "strong-reach");
+    const results = d.steps.filter((s) => s.state === "sp-result");
+    assert.equal(reaches.length, results.length);
+    if (!reaches.length) continue;
+    const [start, end] = [states.indexOf("strong-reach"), states.indexOf("sp-result")];
+    assert.ok(start < end);
+    assert.ok(reaches[0].stars >= 1 && reaches[0].stars <= 5);
+    // ★5 is reserved for hits.
+    if (!d.hit) assert.ok(results[0].stars < 5);
+    // The badge holds from the reach to its result and can only rise.
+    let previous = 0;
+    for (const step of d.steps.slice(start, end + 1)) {
+      assert.ok(step.stars >= previous);
+      previous = step.stars;
+    }
+    assert.ok(d.steps.slice(end + 1).every((s) => !s.stars));
+    // Mission → tease → brink → result, and a final PUSH only happens at the brink.
+    const phases = d.steps
+      .slice(start, end + 1)
+      .map((s) => s.spPhase)
+      .filter((phase, n, all) => phase !== all[n - 1]);
+    assert.deepEqual(phases, ["intro", "tease", "brink", "result"]);
+    assert.equal(states[start + 1], "sp-tease");
+    assert.equal(states[end - 1], "decide");
+    assert.ok(["sp-brink", "push"].includes(states[end - 2]));
+    for (const step of d.steps.slice(start, end + 1))
+      if (step.state === "push") assert.equal(step.spPhase, "brink");
+    // The mission is won exactly when the draw hits, except right before a revival.
+    assert.equal(results[0].success, d.hit && d.scenario !== "revival");
+    const bucket = byStars[results[0].stars - 1];
+    bucket.total++;
+    bucket.hits += d.hit;
+  }
+  const rates = byStars.map(({ hits, total }) => hits / total);
+  assert.equal(rates[4], 1);
+  for (let i = 0; i < 4; i++) assert.ok(rates[i] < rates[i + 1], rates.join());
 });
 test("early OFF does not affect fortune; daikichi can occur with no early signal", () => {
   for (let seed = 1; seed < 200; seed++)

@@ -43,7 +43,7 @@ function script(index, name, promotion = 0.999) {
       await p.locator("#draw-button").dispatchEvent("click");
       assert.equal(await p.locator("#draw-button").isDisabled(), true);
       const seen = [];
-      for (let n = 0; n < 600; n++) {
+      for (let n = 0; n < 900; n++) {
         await p.clock.runFor(100);
         const state = await p.locator(".stage").getAttribute("data-state");
         if (!seen.includes(state)) seen.push(state);
@@ -154,7 +154,7 @@ function script(index, name, promotion = 0.999) {
       await p.goto("http://127.0.0.1:8000/omikuji.html");
       await p.locator("#draw-button").click();
       const seen = [];
-      for (let n = 0; n < 500; n++) {
+      for (let n = 0; n < 900; n++) {
         await p.clock.runFor(100);
         const s = await p.locator(".stage").getAttribute("data-state");
         if (!seen.includes(s)) seen.push(s);
