@@ -287,22 +287,22 @@ h2 span {
   --d: #24113f;
 }
 .reel[data-mode="spin"] .strip {
-  animation: reel-spin 0.36s linear infinite;
+  animation: reel-spin 0.55s linear infinite;
   filter: blur(1.4px);
 }
 .reel[data-mode="slow"] .strip,
 .reel[data-mode="slow-strong"] .strip {
-  animation: reel-spin 1.1s linear infinite;
+  animation: reel-spin 1.6s linear infinite;
 }
 .reel[data-mode="slow-strong"] .strip {
-  animation-duration: 1.6s;
+  animation-duration: 2.3s;
 }
 /* Offset phases so the three reels never scroll in lockstep. */
 .reel:nth-child(2):not([data-mode="stop"]):not([data-mode="zen"]) .strip {
-  animation-delay: -0.13s;
+  animation-delay: -0.2s;
 }
 .reel:nth-child(3):not([data-mode="stop"]):not([data-mode="zen"]) .strip {
-  animation-delay: -0.25s;
+  animation-delay: -0.38s;
 }
 .reel[data-mode="slow"],
 .reel[data-mode="slow-strong"] {
@@ -1176,7 +1176,8 @@ input {
   color: #ffe45c;
   -webkit-text-stroke: 0.12em #b3001b;
   paint-order: stroke fill;
-  animation: swarm 1.5s var(--delay) linear infinite;
+  animation: swarm calc(var(--ms, 3.6s) * 0.45) linear
+    calc(var(--ms, 3.6s) * 0.4 * var(--k, 0)) both;
 }
 .stage[data-state="swarm"] .screen {
   background: radial-gradient(ellipse at 50% 50%, #6b3a12, #1d0d08 75%);
@@ -1737,6 +1738,349 @@ input {
     opacity: 0;
   }
 }
+/* ---- SP suspense: tease (maybe…), brink (just before the outcome), result ---- */
+/* SP scenes take the middle of the screen: the reels shrink to the top, as on real machines. */
+.reels {
+  transform-origin: 50% 0;
+  transition: transform 0.5s ease;
+}
+.stage[data-stars] .reels {
+  transform: scale(0.56);
+}
+.stage[data-sp-phase="brink"] .lamps:before {
+  animation:
+    radiate 6s linear infinite,
+    blink 0.5s steps(2) infinite;
+}
+.stage[data-sp-phase="brink"] .effect-caption {
+  font-size: clamp(1.3rem, 4.6vw, 2.1rem);
+}
+/* 天の扉: rattles and peeks while teased, opens a crack at the brink, then opens or slams. */
+.sp-tobira:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 8px;
+  margin-left: -4px;
+  background: #fff;
+  box-shadow: 0 0 34px 14px #fff9;
+  opacity: 0;
+}
+.stage[data-sp-phase="brink"] .sp-tobira:before,
+.stage[data-sp-result="win"] .sp-tobira:before {
+  opacity: 1;
+}
+.stage[data-sp-phase="tease"] .sp-tobira i:first-child {
+  animation: door-rattle-left 3.4s ease-in-out forwards;
+}
+.stage[data-sp-phase="tease"] .sp-tobira i:last-child {
+  animation: door-rattle-right 3.4s ease-in-out forwards;
+}
+.stage[data-sp-phase="brink"] .sp-tobira i:first-child {
+  animation: door-crack-left 1.8s ease-out forwards;
+}
+.stage[data-sp-phase="brink"] .sp-tobira i:last-child {
+  animation: door-crack-right 1.8s ease-out forwards;
+}
+.stage[data-sp-phase="brink"] .sp-tobira {
+  animation: tremble 0.12s linear infinite;
+}
+.stage[data-sp-result="lose"] .sp-tobira i:first-child {
+  animation: door-slam-left 0.45s ease-in forwards;
+}
+.stage[data-sp-result="lose"] .sp-tobira i:last-child {
+  animation: door-slam-right 0.45s ease-in forwards;
+}
+/* 千本鳥居: the exit light draws nearer, fills the frame at the brink, then bursts or dies. */
+.sp-senbon:after {
+  content: "";
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  width: 150px;
+  height: 150px;
+  margin: -75px 0 0 -75px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 18%, #fffbe0aa 38%, transparent 70%);
+  opacity: 0;
+  transform: scale(0.15);
+}
+.stage[data-sp-phase="tease"] .sp-senbon:after {
+  animation:
+    exit-near 3.4s ease-in forwards,
+    flicker 0.3s steps(2) infinite;
+}
+.stage[data-sp-phase="brink"] .sp-senbon:after {
+  animation: exit-brink 2.4s ease-out forwards;
+}
+.stage[data-sp-phase="brink"] .sp-senbon i {
+  animation-duration: 5s;
+}
+.stage[data-sp-result="win"] .sp-senbon:after {
+  animation: exit-burst 0.9s ease-in forwards;
+}
+.stage[data-sp-result="lose"] .sp-senbon:after {
+  animation: exit-fade 0.8s ease-in forwards;
+}
+/* 桜吹雪: a bud swells while teased, starts to open at the brink, then blooms or withers. */
+.sp-sakura:after {
+  content: "";
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  width: 160px;
+  height: 160px;
+  margin: -80px 0 0 -80px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: radial-gradient(circle at 50% 60%, #fff0f5 0 10%, #ff8fb1 38%, #c2185b 72%);
+  box-shadow: 0 0 34px #ff9fbc;
+  opacity: 0;
+  transform: scale(0.2);
+}
+.stage[data-sp-phase="tease"] .sp-sakura:after {
+  animation: bud-swell 3.4s ease-in-out forwards;
+}
+.stage[data-sp-phase="brink"] .sp-sakura:after {
+  animation: bud-brink 2.6s ease-in-out forwards;
+}
+.stage[data-sp-result="win"] .sp-sakura:after {
+  animation: bloom 1s ease-out forwards;
+}
+.stage[data-sp-result="lose"] .sp-sakura:after {
+  animation: wither 0.9s ease-in forwards;
+}
+@keyframes door-rattle-left {
+  0%,
+  12%,
+  26%,
+  48%,
+  70%,
+  100% {
+    transform: translateX(0);
+  }
+  6% {
+    transform: translateX(-1.5%);
+  }
+  20% {
+    transform: translateX(-2.5%);
+  }
+  38% {
+    transform: translateX(-5%);
+  }
+  60% {
+    transform: translateX(-1.5%);
+  }
+  84% {
+    transform: translateX(-3%);
+  }
+}
+@keyframes door-rattle-right {
+  0%,
+  12%,
+  26%,
+  48%,
+  70%,
+  100% {
+    transform: translateX(0);
+  }
+  6% {
+    transform: translateX(1.5%);
+  }
+  20% {
+    transform: translateX(2.5%);
+  }
+  38% {
+    transform: translateX(5%);
+  }
+  60% {
+    transform: translateX(1.5%);
+  }
+  84% {
+    transform: translateX(3%);
+  }
+}
+@keyframes door-crack-left {
+  from {
+    transform: translateX(0);
+  }
+  60% {
+    transform: translateX(-9%);
+  }
+  to {
+    transform: translateX(-7%);
+  }
+}
+@keyframes door-crack-right {
+  from {
+    transform: translateX(0);
+  }
+  60% {
+    transform: translateX(9%);
+  }
+  to {
+    transform: translateX(7%);
+  }
+}
+@keyframes door-slam-left {
+  from {
+    transform: translateX(-7%);
+  }
+  70% {
+    transform: translateX(0.8%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes door-slam-right {
+  from {
+    transform: translateX(7%);
+  }
+  70% {
+    transform: translateX(-0.8%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes tremble {
+  25% {
+    transform: translateX(1px);
+  }
+  75% {
+    transform: translateX(-1px);
+  }
+}
+@keyframes flicker {
+  50% {
+    filter: brightness(1.5);
+  }
+}
+@keyframes exit-near {
+  from {
+    opacity: 0;
+    transform: scale(0.15);
+  }
+  30% {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 0.9;
+    transform: scale(0.55);
+  }
+}
+@keyframes exit-brink {
+  from {
+    opacity: 0.9;
+    transform: scale(0.55);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+}
+@keyframes exit-burst {
+  from {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  to {
+    opacity: 1;
+    transform: scale(9);
+  }
+}
+@keyframes exit-fade {
+  from {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.1);
+  }
+}
+@keyframes bud-swell {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(0.36);
+  }
+  50% {
+    transform: scale(0.32);
+  }
+  75% {
+    transform: scale(0.46);
+  }
+  to {
+    opacity: 1;
+    transform: scale(0.42);
+  }
+}
+@keyframes bud-brink {
+  from {
+    opacity: 1;
+    transform: scale(0.42) rotate(0);
+  }
+  20% {
+    transform: scale(0.55) rotate(-4deg);
+  }
+  40% {
+    transform: scale(0.6) rotate(4deg);
+  }
+  60% {
+    transform: scale(0.66) rotate(-3deg);
+  }
+  80% {
+    transform: scale(0.7) rotate(3deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(0.72) rotate(0);
+  }
+}
+@keyframes bloom {
+  from {
+    opacity: 1;
+    transform: scale(0.72);
+    filter: brightness(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(3.2);
+    filter: brightness(2);
+  }
+}
+@keyframes wither {
+  from {
+    opacity: 1;
+    transform: scale(0.72);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(70px) scale(0.3);
+  }
+}
+/* Notices bow out at the end of their step instead of vanishing mid-motion. */
+.stage[data-outro] .stepup.pop {
+  animation:
+    stamp 0.4s ease-out,
+    outro 0.4s ease-in calc(var(--ms, 2s) - 450ms) forwards;
+}
+.stage[data-outro] .serif,
+.stage[data-outro] .swarm {
+  animation: outro 0.4s ease-in calc(var(--ms, 3s) - 450ms) forwards;
+}
+@keyframes outro {
+  to {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
 /* ---- Final battle: PUSH button ---- */
 .push {
   position: absolute;
@@ -1831,11 +2175,17 @@ input {
   }
 }
 @keyframes door-open-left {
+  from {
+    transform: translateX(-7%);
+  }
   to {
     transform: translateX(-100%);
   }
 }
 @keyframes door-open-right {
+  from {
+    transform: translateX(7%);
+  }
   to {
     transform: translateX(100%);
   }

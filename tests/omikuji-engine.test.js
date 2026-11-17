@@ -145,8 +145,17 @@ test("every scenario keeps its promises: hits line up, 凶 misses, rainbow only 
               !draw.steps.some((s) => s.state === "push" && s.press === "決"),
               label,
             );
+          // Notices bow out: the last STEP panel, セリフ and 福群 all carry an outro
+          // (except a STEP 1 that a freeze cuts off on purpose).
+          draw.steps.forEach((s, n) => {
+            const lastStep =
+              s.state === "stepup" &&
+              !["stepup", "freeze"].includes(draw.steps[n + 1]?.state);
+            if (["serif", "swarm"].includes(s.state) || lastStep)
+              assert.equal(s.outro, true, label);
+          });
           const total = draw.steps.reduce((sum, s) => sum + s.ms, 0);
-          assert.ok(total >= 2000 && total <= 50000, `${label} ${total}`);
+          assert.ok(total >= 2000 && total <= 65000, `${label} ${total}`);
         }
 });
 test("premium and quick paths look the way they are named", () => {
@@ -219,6 +228,16 @@ test("SP reaches state a mission and a 期待度 that the outcome honours", () =
       previous = step.stars;
     }
     assert.ok(d.steps.slice(end + 1).every((s) => !s.stars));
+    // Mission → tease → brink → result, and a final PUSH only happens at the brink.
+    const phases = d.steps
+      .slice(start, end + 1)
+      .map((s) => s.spPhase)
+      .filter((phase, n, all) => phase !== all[n - 1]);
+    assert.deepEqual(phases, ["intro", "tease", "brink", "result"]);
+    assert.equal(states[start + 1], "sp-tease");
+    assert.equal(states[end - 1] === "sp-brink" || states[end - 1] === "push", true);
+    for (const step of d.steps.slice(start, end + 1))
+      if (step.state === "push") assert.equal(step.spPhase, "brink");
     // The mission is won exactly when the draw hits, except right before a revival.
     assert.equal(results[0].success, d.hit && d.scenario !== "revival");
     const bucket = byStars[results[0].stars - 1];

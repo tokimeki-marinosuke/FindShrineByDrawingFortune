@@ -90,7 +90,8 @@
     const charm = document.createElement("i");
     charm.textContent = i % 3 ? "福" : "⛩";
     charm.style.setProperty("--y", ((i * 29) % 90) + 3 + "%");
-    charm.style.setProperty("--delay", ((i * 0.13) % 1.6).toFixed(2) + "s");
+    // Launch order across the notice (0〜1); CSS spreads it over the step's length.
+    charm.style.setProperty("--k", ((i * 7) % 16) / 15);
     charm.style.setProperty("--size", 1 + (i % 4) * 0.35 + "rem");
     return charm;
   });
@@ -192,6 +193,8 @@
     delete stage.dataset.frozen;
     delete stage.dataset.stars;
     delete stage.dataset.spResult;
+    delete stage.dataset.spPhase;
+    delete stage.dataset.outro;
     const fever = current.fortune === "大吉";
     stage.dataset.state = fever ? "fever" : current.hit ? "result" : "miss";
     stage.dataset.tier = current.tier;
@@ -278,7 +281,7 @@
         spinAll();
         break;
       case "reach":
-        cutinDelay = reduced() ? 0 : Math.min(800, step.ms / 4);
+        cutinDelay = reduced() ? 0 : Math.min(1200, step.ms / 4);
         setReel(1, "spin");
         setReel(0, "stop", step.symbol);
         later(() => {
@@ -352,8 +355,15 @@
       if (step.stars > Number(stage.dataset.stars || 0) && stage.dataset.stars)
         restart(starsBadge, "up");
       stage.dataset.stars = step.stars;
+      stage.dataset.spPhase = step.spPhase;
       starsBadge.querySelector("span").textContent = starLine(step.stars);
-    } else delete stage.dataset.stars;
+    } else {
+      delete stage.dataset.stars;
+      delete stage.dataset.spPhase;
+    }
+    // Notices marked outro fade out at the end of their step instead of vanishing.
+    if (step.outro) stage.dataset.outro = "";
+    else delete stage.dataset.outro;
     if (step.state === "sp-result")
       stage.dataset.spResult = step.success ? "win" : "lose";
     else delete stage.dataset.spResult;
@@ -367,6 +377,8 @@
         "strong-reach",
         "hot",
         "push",
+        "sp-tease",
+        "sp-brink",
         "sp-result",
         "provisional",
         "blackout",
