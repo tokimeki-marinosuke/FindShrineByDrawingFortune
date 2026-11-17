@@ -197,6 +197,38 @@ test("premium and quick paths look the way they are named", () => {
   );
   assert.ok(!plain.steps.some((s) => ["repeat", "hold"].includes(s.state)));
 });
+test("SP reaches state a mission and a 期待度 that the outcome honours", () => {
+  const random = lcg(4321);
+  const byStars = [0, 0, 0, 0, 0].map(() => ({ hits: 0, total: 0 }));
+  for (let n = 0; n < 25000; n++) {
+    const d = createDraw({}, random);
+    const states = d.steps.map((s) => s.state);
+    const reaches = d.steps.filter((s) => s.state === "strong-reach");
+    const results = d.steps.filter((s) => s.state === "sp-result");
+    assert.equal(reaches.length, results.length);
+    if (!reaches.length) continue;
+    const [start, end] = [states.indexOf("strong-reach"), states.indexOf("sp-result")];
+    assert.ok(start < end);
+    assert.ok(reaches[0].stars >= 1 && reaches[0].stars <= 5);
+    // ★5 is reserved for hits.
+    if (!d.hit) assert.ok(results[0].stars < 5);
+    // The badge holds from the reach to its result and can only rise.
+    let previous = 0;
+    for (const step of d.steps.slice(start, end + 1)) {
+      assert.ok(step.stars >= previous);
+      previous = step.stars;
+    }
+    assert.ok(d.steps.slice(end + 1).every((s) => !s.stars));
+    // The mission is won exactly when the draw hits, except right before a revival.
+    assert.equal(results[0].success, d.hit && d.scenario !== "revival");
+    const bucket = byStars[results[0].stars - 1];
+    bucket.total++;
+    bucket.hits += d.hit;
+  }
+  const rates = byStars.map(({ hits, total }) => hits / total);
+  assert.equal(rates[4], 1);
+  for (let i = 0; i < 4; i++) assert.ok(rates[i] < rates[i + 1], rates.join());
+});
 test("early OFF does not affect fortune; daikichi can occur with no early signal", () => {
   for (let seed = 1; seed < 200; seed++)
     assert.equal(createDraw({ early: "off" }, lcg(seed)).early, false);

@@ -15,6 +15,9 @@
   const stepupNumber = document.querySelector(".stepup-n");
   const bubble = document.querySelector(".bubble");
   const pushButton = document.querySelector(".push");
+  const mission = document.querySelector(".mission");
+  const starsBadge = document.querySelector(".stars");
+  const starLine = (count) => "★".repeat(count) + "☆".repeat(5 - count);
   const reels = [...document.querySelectorAll(".reel")];
   const info = document.querySelector(".shrine-info");
   const countdown = document.querySelector(".countdown");
@@ -187,6 +190,8 @@
     finished = true;
     clearTimers();
     delete stage.dataset.frozen;
+    delete stage.dataset.stars;
+    delete stage.dataset.spResult;
     const fever = current.fortune === "大吉";
     stage.dataset.state = fever ? "fever" : current.hit ? "result" : "miss";
     stage.dataset.tier = current.tier;
@@ -282,7 +287,18 @@
         }, cutinDelay);
         break;
       case "strong-reach":
-        cutinDelay = reduced() ? 0 : 400;
+        // Title cut-in first, then the mission card with its 期待度.
+        cutinDelay = reduced() ? 0 : step.ms * 0.07;
+        later(
+          () => {
+            mission.querySelector(".mission-text").textContent = step.text;
+            mission.querySelector(".mission-stars").textContent = starLine(
+              step.stars,
+            );
+            restart(mission, "show");
+          },
+          reduced() ? 0 : step.ms * 0.27,
+        );
         setReel(1, "slow-strong");
         break;
       case "push":
@@ -331,6 +347,16 @@
         break;
     }
     if (step.cutin) later(() => showCutin(step.cutin), cutinDelay);
+    // The 期待度 badge stays up for the whole SP reach and pops when it rises.
+    if (step.stars) {
+      if (step.stars > Number(stage.dataset.stars || 0) && stage.dataset.stars)
+        restart(starsBadge, "up");
+      stage.dataset.stars = step.stars;
+      starsBadge.querySelector("span").textContent = starLine(step.stars);
+    } else delete stage.dataset.stars;
+    if (step.state === "sp-result")
+      stage.dataset.spResult = step.success ? "win" : "lose";
+    else delete stage.dataset.spResult;
     // Only meaningful milestones are announced, never the rapidly changing reels.
     if (
       [
@@ -341,6 +367,7 @@
         "strong-reach",
         "hot",
         "push",
+        "sp-result",
         "provisional",
         "blackout",
         "revival",
@@ -354,7 +381,11 @@
         "fever",
       ].includes(step.state)
     )
-      result.textContent = step.label + "：" + step.text;
+      result.textContent =
+        step.label +
+        "：" +
+        step.text +
+        (step.state === "strong-reach" ? `（期待度 ★${step.stars}）` : "");
     timer = setTimeout(() => play(index + 1), step.ms);
   }
   // Pressing PUSH only ends the wait early; the outcome was fixed at the start.

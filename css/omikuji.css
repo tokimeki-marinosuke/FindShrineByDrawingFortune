@@ -1189,12 +1189,12 @@ input {
   overflow: hidden;
   pointer-events: none;
 }
-.stage[data-state="strong-reach"][data-sp="senbon"] .sp-senbon,
-.stage[data-state="strong-reach"][data-sp="tobira"] .sp-tobira,
-.stage[data-state="strong-reach"][data-sp="sakura"] .sp-sakura {
+.stage[data-stars][data-sp="senbon"] .sp-senbon,
+.stage[data-stars][data-sp="tobira"] .sp-tobira,
+.stage[data-stars][data-sp="sakura"] .sp-sakura {
   display: block;
 }
-.stage[data-state="strong-reach"] .torii {
+.stage[data-stars] .torii {
   visibility: hidden;
 }
 .sp-senbon {
@@ -1253,7 +1253,7 @@ input {
     linear-gradient(#b0261c, #6e0f0b);
   box-shadow: inset 0 0 0 6px #e0b04d;
   font-style: normal;
-  animation: var(--ms, 5s) ease-in-out forwards;
+  animation: 0.9s ease-out forwards;
 }
 .sp-tobira i:after {
   display: grid;
@@ -1269,14 +1269,14 @@ input {
 }
 .sp-tobira i:first-child {
   left: 0;
-  animation-name: door-left;
+  animation-name: door-close-left;
 }
 .sp-tobira i:first-child:after {
   content: "開";
 }
 .sp-tobira i:last-child {
   right: 0;
-  animation-name: door-right;
+  animation-name: door-close-right;
 }
 .sp-tobira i:last-child:after {
   content: "運";
@@ -1597,6 +1597,146 @@ input {
 .stage[data-state="miss"] .particles {
   opacity: 0;
 }
+/* ---- SP mission: card, 期待度 badge and the mission's outcome ---- */
+.mission,
+.stars {
+  display: none;
+}
+.mission {
+  position: absolute;
+  z-index: 6;
+  inset: 0;
+  width: min(84%, 420px);
+  height: fit-content;
+  margin: auto;
+  padding: 14px 18px 12px;
+  border: 2px solid #f6d58a;
+  border-radius: 14px;
+  background: linear-gradient(160deg, #2b0d14f0, #12060af0);
+  box-shadow:
+    0 0 0 4px #0009,
+    0 0 40px #ff5a3c88;
+  text-align: center;
+  pointer-events: none;
+}
+.mission.show {
+  display: block;
+  animation: mission 2.6s ease-out forwards;
+}
+.mission b {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: #c4001a;
+  color: #fff;
+  font-family: "Dela Gothic One", sans-serif;
+  font-weight: normal;
+  font-size: 0.8rem;
+  letter-spacing: 0.3em;
+}
+.mission-text {
+  margin: 8px 0 4px;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: clamp(1.05rem, 4.4vw, 1.5rem);
+  color: #fff;
+}
+.mission-stars,
+.stars span {
+  margin: 0;
+  color: #ffd54a;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 10px #ffb70388;
+}
+.mission-stars {
+  font-size: 1.6rem;
+}
+.stars {
+  position: absolute;
+  z-index: 7;
+  top: 12px;
+  right: 14px;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 4px 12px;
+  border: 1px solid #f6d58a99;
+  border-radius: 999px;
+  background: #000b;
+  font-size: 1rem;
+}
+.stars small {
+  color: #f2dfb8;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+}
+.stage[data-stars] .stars {
+  display: flex;
+}
+.stars.up {
+  animation: stamp 0.5s ease-out;
+}
+/* ★5 is a sure hit: rainbow stars. */
+.stage[data-stars="5"] .stars span,
+.stage[data-stars="5"] .mission-stars {
+  background: linear-gradient(90deg, #ff4d6d, #ffd23f, #55e06b, #4dd2ff, #e15cff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.stage[data-state="sp-result"] .cutin {
+  color: #ffe45c;
+  -webkit-text-stroke-color: #a3000f;
+}
+.stage[data-sp-result="win"] .screen {
+  animation: flash 0.7s ease-out;
+}
+.stage[data-sp-result="lose"] .reels,
+.stage[data-sp-result="lose"] .sp {
+  filter: saturate(0.35) brightness(0.6);
+}
+.stage[data-sp-result="win"] .sp-senbon {
+  background: radial-gradient(ellipse at 50% 48%, #fff, #ffe9a8 22%, #e8452c 55%, #2a0707);
+}
+.stage[data-sp-result="win"] .sp-senbon i {
+  animation-duration: 0.8s;
+}
+.stage[data-sp-result="lose"] .sp-senbon i,
+.stage[data-sp-result="lose"] .sp-sakura i {
+  animation-play-state: paused;
+}
+.stage[data-sp-result="win"] .sp-tobira i:first-child {
+  animation: door-open-left 1.1s ease-in forwards;
+}
+.stage[data-sp-result="win"] .sp-tobira i:last-child {
+  animation: door-open-right 1.1s ease-in forwards;
+}
+.stage[data-sp-result="win"] .sp-sakura {
+  background: radial-gradient(circle at 50% 50%, #fff4f8, #ff9fbc 40%, #d2537e 80%);
+}
+.stage[data-sp-result="win"] .sp-sakura i {
+  width: 16px;
+  height: 21px;
+  animation-duration: 1.2s;
+}
+@keyframes mission {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  12% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  18%,
+  82% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
 /* ---- Final battle: PUSH button ---- */
 .push {
   position: absolute;
@@ -1680,26 +1820,22 @@ input {
     opacity: 0.9;
   }
 }
-@keyframes door-left {
+@keyframes door-close-left {
   from {
     transform: translateX(-100%);
   }
-  14%,
-  80% {
-    transform: translateX(0);
+}
+@keyframes door-close-right {
+  from {
+    transform: translateX(100%);
   }
+}
+@keyframes door-open-left {
   to {
     transform: translateX(-100%);
   }
 }
-@keyframes door-right {
-  from {
-    transform: translateX(100%);
-  }
-  14%,
-  80% {
-    transform: translateX(0);
-  }
+@keyframes door-open-right {
   to {
     transform: translateX(100%);
   }
@@ -1911,6 +2047,9 @@ input {
 .stage.reduced .boot p {
   opacity: 1;
 }
+.stage.reduced .mission {
+  display: none;
+}
 .stage.reduced[data-state="early"] .screen {
   box-shadow: inset 0 0 0 3px #b84646;
 }
@@ -2014,5 +2153,8 @@ input {
   }
   .boot p {
     opacity: 1;
+  }
+  .mission {
+    display: none !important;
   }
 }
